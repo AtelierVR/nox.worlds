@@ -1,0 +1,32 @@
+{
+    "name": "Nox.Worlds.Runtime.Editor",
+    "rootNamespace": "",
+    "references": [
+        "Nox.CCK",
+        "Nox.CCK.Worlds",
+        "Nox.Worlds",
+        "Nox.Worlds.Runtime",
+        "Nox.Worlds.Pipeline",
+        "Nox.Players",
+        "Nox.Entities",
+        "Nox.Users",
+        "Nox.Network",
+        "Nox.Tables",
+        "Nox.Search",
+        "Nox.UI",
+        "Nox.Editor.Panel",
+        "Nox.Controllers",
+        "UniTask"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

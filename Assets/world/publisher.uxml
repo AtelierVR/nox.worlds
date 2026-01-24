@@ -1,0 +1,107 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <engine:VisualElement class="parent-container">
+        <engine:VisualElement class="main-container">
+            <engine:GroupBox class="section">
+                <editor:ObjectField label="World Descriptor" type="Nox.CCK.Worlds.WorldDescriptor, Nox.CCK" name="descriptor-field" class="disable-on-error large readonly" />
+            </engine:GroupBox>
+            <engine:ScrollView class="border border-top" style="flex-grow: 1;">
+                <engine:GroupBox name="notifications" class="p-0 m-0">
+                    <engine:VisualElement name="not-logged" class="section border border-bottom" style="display: none;">
+                        <engine:VisualElement class="notification notification-warning">
+                            <engine:VisualElement class="icon-container">
+                                <engine:VisualElement name="icon" class="icon" />
+                            </engine:VisualElement>
+                            <engine:VisualElement style="flex-grow: 1; justify-content: center;">
+                                <engine:VisualElement name="content">
+                                    <engine:Label text="You are not logged in.\nTo publish on a server, you must be connected to the CCK or upload the world." style="white-space: pre-wrap;" />
+                                </engine:VisualElement>
+                            </engine:VisualElement>
+                        </engine:VisualElement>
+                    </engine:VisualElement>
+                    <engine:GroupBox name="world-not-found" class="p-0 m-0 border border-bottom">
+                        <engine:Foldout text="Attach World" class="section">
+                            <engine:Label text="No world was found.\nThis may be because you don&apos;t have permissions to modify the world or it doesn&apos;t exist." class="label subtitle" style="white-space: pre-wrap;" />
+                            <engine:Foldout text="Advanced settings" value="false" style="margin-top: 8px;">
+                                <engine:TextField label="Server" placeholder-text="(optional)" name="attach-server" class="large" />
+                                <engine:UnsignedIntegerField placeholder-text="(optional)" name="attach-id" label="World id" class="large" />
+                            </engine:Foldout>
+                            <engine:Button text="Attach" name="attach-world" class="large" style="margin-top: 8px;" />
+                        </engine:Foldout>
+                    </engine:GroupBox>
+                    <engine:GroupBox name="world" class="p-0 m-0 border border-bottom">
+                        <engine:Foldout text="World Informations" value="true" class="section">
+                            <engine:Label text="View and edit world details, capacity, and metadata" class="subtitle" />
+                            <engine:TextField label="Server" placeholder-text="::" name="info-server" readonly="true" class="large" />
+                            <engine:UnsignedIntegerField label="World Id" value="0" readonly="true" name="info-id" class="large" />
+                            <engine:TextField label="Title" name="info-title" class="large" style="margin-top: 8px;" />
+                            <engine:TextField label="Description" name="info-description" multiline="true" class="large multiline" />
+                            <engine:UnsignedIntegerField label="Capacity" value="0" name="info-capacity" class="large" />
+                            <engine:Foldout text="Thumbnail" value="true" style="margin-top: 8px; display: flex;">
+                                <engine:Label text="Upload a thumbnail image for your world" class="subtitle" />
+                                <engine:VisualElement style="flex-direction: row; margin-top: 4px;">
+                                    <editor:ObjectField label="Thumbnail" type="UnityEngine.Texture2D, UnityEngine.CoreModule" name="thumbnail-field" class="large" style="flex-grow: 1; margin-right: 2px;" />
+                                    <engine:Button text="Upload" name="thumbnail-upload" class="large" style="margin-left: 2px;" />
+                                </engine:VisualElement>
+                                <engine:VisualElement name="thumbnail-preview" style="margin-top: 8px; align-items: center; justify-content: center; min-height: 100px; background-color: rgba(0, 0, 0, 0.1); border-radius: 4px; padding-top: 8px; padding-right: 8px; padding-bottom: 8px; padding-left: 8px;">
+                                    <engine:Image name="thumbnail-image" style="max-width: 200px; max-height: 200px; margin-bottom: 4px; -unity-background-scale-mode: scale-to-fit; display: none;" />
+                                    <engine:Label text="No thumbnail preview available" name="thumbnail-status" style="color: rgba(255, 255, 255, 0.6);" />
+                                    <engine:Button text="Fix Automatically" name="thumbnail-fix-button" class="large" style="display: none; margin-top: 4px;" />
+                                </engine:VisualElement>
+                            </engine:Foldout>
+                            <engine:Foldout text="Advanced Options" value="false" style="margin-bottom: 8px; margin-top: 8px;">
+                                <engine:Button text="Delete World" name="info-delete" class="large" />
+                            </engine:Foldout>
+                            <engine:VisualElement style="flex-direction: row;">
+                                <engine:Button text="Fetch" name="info-fetch" class="large" style="flex-grow: 1; margin-right: 1px;" />
+                                <engine:Button text="Update" name="info-update" class="large" style="flex-grow: 1; margin-left: 1px; margin-right: 1px;" />
+                                <engine:Button text="Detach" name="info-detach" class="large" style="margin-left: 1px;" />
+                            </engine:VisualElement>
+                        </engine:Foldout>
+                    </engine:GroupBox>
+                    <engine:GroupBox name="world-asset" class="p-0 m-0 border border-bottom">
+                        <engine:Foldout text="Asset Versioning" value="false" class="section">
+                            <engine:Label text="Manage asset versions and publication settings" class="subtitle" />
+                            <engine:VisualElement name="asset-file-assigned" class="notification">
+                                <engine:VisualElement class="icon-container">
+                                    <engine:VisualElement name="icon" class="icon" />
+                                </engine:VisualElement>
+                                <engine:VisualElement style="flex-grow: 1; justify-content: center;">
+                                    <engine:VisualElement name="content">
+                                        <engine:Label text="Please note that an asset with this version and platform already has a file assigned to it. To remove the assignment, you can &apos;Clear Asset&apos; in the advanced options.&#10;" style="white-space: pre-wrap;" />
+                                    </engine:VisualElement>
+                                </engine:VisualElement>
+                            </engine:VisualElement>
+                            <engine:UnsignedIntegerField label="Version" value="0" name="asset-version" class="large" />
+                            <engine:Foldout text="Advanced Options" value="true" style="margin-bottom: 8px; margin-top: 8px;">
+                                <engine:Toggle label="Publication only if there is no assigned file to it" name="asset-strict" value="true" class="large" />
+                                <engine:Toggle label="Auto-increment, if asset has a file assigned to it" name="asset-auto-version" class="large" />
+                                <engine:Button text="Delete Asset" name="asset-delete" class="large" />
+                                <engine:Button text="Clear Asset" name="asset-clear" class="large" />
+                            </engine:Foldout>
+                            <engine:VisualElement style="flex-direction: row;">
+                                <engine:Button text="Fetch" name="asset-fetch" class="large" style="flex-grow: 1;" />
+                                <engine:Button text="Detect last version" name="asset-detect-version" class="large" />
+                            </engine:VisualElement>
+                        </engine:Foldout>
+                    </engine:GroupBox>
+                </engine:GroupBox>
+            </engine:ScrollView>
+            <engine:GroupBox name="progress-container" class="border border-top section" style="display: none;">
+                <engine:Label text="Building..." name="progress-label" class="subtitle" />
+                <engine:ProgressBar name="progress-bar" class="large" />
+            </engine:GroupBox>
+            <engine:GroupBox class="p-0 m-0 border border-top">
+                <engine:Foldout text="Publish" value="false" class="section">
+                    <engine:Label text="Build and upload your world to the server" class="subtitle" />
+                    <engine:VisualElement style="flex-direction: row;">
+                        <engine:EnumField label="Target" value="Center" type="Nox.CCK.Utils.Platform, Nox.CCK" name="platform-field" class="large" style="flex-grow: 1; margin-right: 1px;" />
+                        <engine:Button text="Detect" name="detect-platform" class="large" style="margin-left: 1px;" />
+                    </engine:VisualElement>
+                    <engine:VisualElement style="margin-top: 8px;">
+                        <engine:Button text="Publish" name="publish-button" class="large" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+            </engine:GroupBox>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

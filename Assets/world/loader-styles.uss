@@ -1,0 +1,136 @@
+.load-button {
+    border-radius: 4px;
+    padding: 4px 8px;
+    border-width: 1px;
+    min-height: 20px;
+}
+
+.load-play-button {
+    border-radius: 4px;
+    padding: 4px 8px;
+    border-width: 1px;
+    min-height: 20px;
+}
+
+.refresh-button {
+    border-radius: 4px;
+    padding: 4px 8px;
+    border-width: 1px;
+    min-height: 20px;
+}
+
+.load-button:hover {
+    opacity: 0.8;
+}
+
+.load-play-button:hover {
+    opacity: 0.8;
+}
+
+.refresh-button:hover {
+    opacity: 0.8;
+}
+
+.advanced-button:hover {
+    opacity: 0.8;
+}
+
+.load-button {
+    margin-left: 4px;
+}
+
+.load-play-button {
+    margin-left: 4px;
+}
+
+.refresh-button {
+    min-width: 70px;
+}
+
+.advanced-button {
+    flex-grow: 1;
+    border-radius: 4px;
+    padding: 6px 12px;
+    border-width: 1px;
+}
+
+.search-container {
+    flex-direction: row;
+    align-items: center;
+}
+
+.toggles-container {
+    flex-direction: row;
+    align-items: center;
+}
+
+.world-buttons {
+    flex-direction: row;
+    align-items: center;
+}
+
+.advanced-actions {
+    flex-direction: row;
+}
+
+.world-item {
+    flex-direction: row;
+    align-items: center;
+    background-color: rgba(76, 76, 76, 0.5);
+    border-radius: 4px;
+    margin-bottom: 4px;
+    padding: 8px 12px;
+}
+
+.world-item:hover {
+    background-color: rgba(100, 149, 237, 0.2);
+}
+
+.world-info {
+    flex-grow: 1;
+}
+
+.world-name {
+    font-size: 14px;
+    -unity-font-style: bold;
+    color: rgb(230, 230, 230);
+}
+
+.world-path {
+    font-size: 11px;
+    color: rgb(180, 180, 180);
+    margin-top: 2px;
+}
+
+.search-field {
+    flex-grow: 1;
+    margin-right: 8px;
+    min-height: 20px;
+}
+
+.search-field .unity-text-field__input {
+    padding: 4px 8px;
+    min-height: 20px;
+}
+
+.toggle-spacing {
+    margin-right: 16px;
+}
+
+.advanced-button.cache {
+    margin-right: 4px;
+}
+
+.advanced-button.folder {
+    margin-left: 4px;
+}
+
+.advanced-button.settings {
+    margin-top: 8px;
+}
+
+.no-results {
+    color: rgb(180, 180, 180);
+    margin: 16px;
+    -unity-text-align: middle-center;
+}

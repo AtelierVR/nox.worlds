@@ -1,0 +1,30 @@
+{
+  "name": "Nox.Worlds.Runtime",
+  "rootNamespace": "",
+  "references": [
+    "Nox.CCK",
+    "UniTask",
+    "Nox.Worlds",
+    "Nox.CCK.Worlds",
+    "Nox.Search",
+    "Nox.UI",
+    "Nox.Users",
+    "Nox.Sessions",
+    "Nox.Instances",
+    "Nox.Worlds.Pipeline",
+    "Nox.Network",
+    "Nox.Tables",
+    "Nox.Worlds.Scenes",
+    "Nox.CCK.Network",
+    "Nox.Entities"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

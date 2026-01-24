@@ -1,0 +1,49 @@
+{
+  "type": "mod",
+  "id": "nox.worlds",
+  "provides": [
+    "fr.hactazia.sdk.worlds",
+    "world"
+  ],
+  "name": "World",
+  "version": "1.0.0",
+  "description": "Provides the World API for the game.",
+  "license": "GPL-3.0",
+  "icon": null,
+  "contact": {
+    "email": "hactazia@gmail.com",
+    "source": "https://github.com/AtelierVR/nox.worlds",
+    "website": "https://nox.hactazia.fr/",
+    "issues": "https://github.com/AtelierVR/nox.worlds/issues"
+  },
+  "authors": [
+    {
+      "name": "Hactazia",
+      "email": "hactazia@gmail.com",
+      "website": "https://hactazia.fr/"
+    }
+  ],
+  "constraints": [
+    {
+      "type": "after",
+      "id": "network"
+    },
+    {
+      "type": "after",
+      "id": "search"
+    }
+  ],
+  "entrypoints": {
+    "main": [
+      "Nox.Worlds.Runtime.Main"
+    ],
+    "editor": [
+      "Nox.Worlds.Runtime.Editor.Editor",
+      "Nox.Worlds.Runtime.Editor.BuilderPanel",
+      "Nox.Worlds.Runtime.Editor.PublisherPanel"
+    ],
+    "client": [
+      "Nox.Worlds.Runtime.Clients.Client"
+    ]
+  }
+}

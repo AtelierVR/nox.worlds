@@ -1,0 +1,125 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Packages/api.nox.cck/Resources/nox.style.uss?fileID=7433441132597879392&amp;guid=956d93e835714844b98277f4fdbd77d3&amp;type=3#nox.style" />
+    <Style src="project://database/Packages/api.nox.editor.panel/Resources/Style.uss?fileID=7433441132597879392&amp;guid=c76f20c75875ce847a8c27b1469d39e0&amp;type=3#Style" />
+    <ui:GroupBox class="m-0 border-b p-8">
+        <uie:ObjectField label="World" type="Nox.CCK.Worlds.WorldDescriptor, Nox.CCK.Worlds" name="selected" class="readonly large" />
+    </ui:GroupBox>
+    <ui:VisualElement style="flex-grow: 1;">
+        <ui:ScrollView style="display: flex;">
+            <ui:VisualElement style="flex-grow: 1; display: flex;">
+                <ui:VisualElement name="not-logged" style="flex-grow: 1; justify-content: center; display: none;">
+                    <ui:GroupBox class="p-8 m-0">
+                        <ui:Label text="Not Logged In" class="text-lg text-center mb-8" />
+                        <ui:Label text="You need to be logged in to publish worlds." class="text-center" style="opacity: 0.7;" />
+                    </ui:GroupBox>
+                </ui:VisualElement>
+                <ui:VisualElement name="no-descriptor" style="flex-grow: 1; justify-content: center; display: none;">
+                    <ui:GroupBox class="p-8 m-0">
+                        <ui:Label text="No World Selected" class="text-lg text-center mb-8" />
+                        <ui:Label text="Please select a world descriptor to continue." class="text-center" style="opacity: 0.7;" />
+                    </ui:GroupBox>
+                </ui:VisualElement>
+                <ui:VisualElement name="loading" style="flex-grow: 1; justify-content: center; display: none;">
+                    <ui:GroupBox class="p-8 m-0">
+                        <ui:Label text="Loading..." class="text-lg text-center" />
+                    </ui:GroupBox>
+                </ui:VisualElement>
+                <ui:VisualElement name="attach" style="display: none;">
+                    <ui:GroupBox class="p-8 m-0 border-b">
+                        <ui:Label text="Attach World" class="text-lg mb-8" />
+                        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 8px;">
+                            <ui:Label text="World ID" style="min-width: 100px;" />
+                            <ui:TextField placeholder-text="(auto-generate)" name="attach-id" class="large" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 8px;">
+                            <ui:Label text="Server" style="min-width: 100px;" />
+                            <ui:TextField placeholder-text="(auto-filled)" readonly="true" name="attach-server" class="large" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:Button text="Attach" name="attach-button" class="large mt-8" />
+                    </ui:GroupBox>
+                </ui:VisualElement>
+                <ui:VisualElement name="attached" style="display: flex;">
+                    <ui:GroupBox class="p-8 m-0 border-b">
+                        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 8px;">
+                            <ui:Label text="World Information" class="text-lg" style="flex-grow: 1; flex-shrink: 1;" />
+                            <ui:Button text="Refresh" name="info-refresh" class="large" style="margin-right: 4px; flex-shrink: 1; flex-grow: 1;" />
+                            <ui:Button text="Detach" name="info-detach" class="large" style="flex-shrink: 1; flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="large" style="flex-direction: row; align-items: center; margin-top: 8px; margin-bottom: 4px;">
+                            <ui:Label text="Server" style="min-width: 100px; opacity: 0.7;" />
+                            <ui:TextField readonly="true" name="info-server" placeholder-text="::" class="large readonly" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 4px;">
+                            <ui:Label text="ID" style="min-width: 100px; opacity: 0.7;" />
+                            <uie:UnsignedIntegerField readonly="true" name="info-id" class="large readonly" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 4px;">
+                            <ui:Label text="Name" style="min-width: 100px;" />
+                            <ui:TextField name="info-name" class="large" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; align-items: flex-start; margin-bottom: 8px;">
+                            <ui:Label text="Description" style="min-width: 100px; margin-top: 4px;" />
+                            <ui:TextField name="info-description" multiline="true" value="&#10;&#10;&#10;&#10;" class="large" style="flex-grow: 1;" />
+                        </ui:VisualElement>
+                        <ui:Button text="Update" name="info-update" class="large" />
+                    </ui:GroupBox>
+                    <ui:VisualElement name="asset-settings" style="display: flex;">
+                        <ui:GroupBox class="p-8 m-0 border-b">
+                            <ui:Label text="Asset Settings" class="text-lg mb-8" />
+                            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 4px;">
+                                <ui:Label text="Version" style="min-width: 150px; flex-shrink: 1; flex-grow: 0;" />
+                                <uie:UnsignedIntegerField name="asset-version" class="large" style="flex-grow: 1; margin-right: 4px; flex-shrink: 1;" />
+                                <ui:Button text="Detect" name="asset-detect-version" class="large" style="min-width: 80px;" />
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+                                <ui:Label text="Auto increment version" style="min-width: 150px; -unity-text-align: middle-left; flex-shrink: 1;" />
+                                <ui:Toggle name="asset-auto-version" class="large" />
+                            </ui:VisualElement>
+                            <ui:VisualElement style="flex-grow: 1; flex-direction: row;">
+                                <ui:Label text="Strict version checking" style="min-width: 150px; flex-shrink: 1; -unity-text-align: middle-left;" />
+                                <ui:Toggle name="asset-strict" class="large" />
+                            </ui:VisualElement>
+                        </ui:GroupBox>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="thumbnail-section" style="display: flex;">
+                        <ui:GroupBox class="p-8 m-0 border-b">
+                            <ui:Label text="Thumbnail" class="text-lg mb-8" />
+                            <uie:ObjectField label="Select Texture" type="UnityEngine.Texture2D, UnityEngine.CoreModule" name="thumbnail-field" class="large mb-8" />
+                            <ui:VisualElement name="thumbnail-preview" style="align-items: center; margin-bottom: 8px;">
+                                <ui:Image name="thumbnail-image" style="width: 200px; height: 200px; margin-bottom: 8px;" />
+                                <ui:Label name="thumbnail-status" text="No thumbnail" style="margin-bottom: 8px;" />
+                                <ui:Button text="Fix" name="thumbnail-fix-button" class="small" style="display: none;" />
+                            </ui:VisualElement>
+                            <ui:Button text="Upload Thumbnail" name="thumbnail-upload" class="large" />
+                        </ui:GroupBox>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+    <ui:GroupBox class="m-0 border-t pb-16 p-8" style="flex-direction: row;">
+        <ui:EnumField value="None" type="Nox.CCK.Utils.Platform, Nox.CCK" name="platform" class="large" style="flex-grow: 1;" />
+        <ui:Button text="Publish" name="publish" class="large" style="min-width: 134px;" />
+    </ui:GroupBox>
+    <ui:GroupBox name="building" class="m-0 p-0 bg-modal" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: none;">
+        <ui:VisualElement style="flex-grow: 1;" />
+        <ui:VisualElement class="bg-default p-8 pb-16 border-t rounded-t-lg">
+            <ui:VisualElement class="border-b mb-8 pb-8">
+                <ui:Label text="Building &amp; Publishing" style="-unity-text-align: upper-center; font-size: 18px;" />
+            </ui:VisualElement>
+            <ui:Label text="Preparing..." name="status" class="margin-x my-16" />
+            <ui:ProgressBar value="0" name="progress" class="large p-0 m-0 margin" />
+        </ui:VisualElement>
+    </ui:GroupBox>
+    <ui:GroupBox name="result" class="m-0 p-0 bg-modal" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: none;">
+        <ui:VisualElement style="flex-grow: 1;" />
+        <ui:VisualElement class="p-8 pb-16 border-t rounded-t-lg bg-default">
+            <ui:VisualElement class="border-b mb-8 pb-8">
+                <ui:Label text="Success" name="success" style="color: rgb(0, 255, 0); -unity-text-align: upper-center; font-size: 18px; display: none;" />
+                <ui:Label text="Failed" name="failed" style="color: rgb(255, 0, 0); -unity-text-align: upper-center; font-size: 18px; display: none;" />
+            </ui:VisualElement>
+            <ui:Label name="details" class="margin-x my-16" style="white-space: normal;" />
+            <ui:Button text="OK" name="ok" class="large" />
+        </ui:VisualElement>
+    </ui:GroupBox>
+</ui:UXML>

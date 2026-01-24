@@ -1,0 +1,24 @@
+{
+  "name": "Nox.Worlds.Pipeline",
+  "rootNamespace": "",
+  "references": [
+    "Nox.CCK",
+    "UniTask",
+    "Nox.Worlds",
+    "Nox.CCK.Worlds",
+    "Unity.ScriptableBuildPipeline",
+    "Unity.ScriptableBuildPipeline.Editor",
+    "Nox.Worlds.Scenes"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+	<assembly fullname="Nox.CCK.Worlds" preserve="all" />
+	<assembly fullname="Nox.Mods.Worlds" preserve="all" />
+	<assembly fullname="Nox.Worlds" preserve="all" />
+	<assembly fullname="Nox.Worlds.Pipeline" preserve="all" />
+	<assembly fullname="Nox.Worlds.Runtime" preserve="all" />
+	<assembly fullname="Nox.Worlds.Runtime.Editor" preserve="all" />
+</linker>

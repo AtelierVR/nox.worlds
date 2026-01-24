@@ -1,0 +1,13 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <engine:GroupBox name="box" class="notification-item">
+        <engine:VisualElement class="notification-type">
+            <engine:Image name="icon" style="width: 24px; height: 24px; margin-top: auto; margin-right: auto; margin-bottom: auto; margin-left: auto;" />
+        </engine:VisualElement>
+        <engine:VisualElement style="flex-grow: 1;">
+            <engine:VisualElement name="content" class="notification-content" />
+        </engine:VisualElement>
+        <engine:VisualElement name="actions" style="flex-grow: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; border-left-color: rgb(47, 47, 47); border-right-color: rgb(47, 47, 47); border-top-color: rgb(47, 47, 47); border-bottom-color: rgb(47, 47, 47); border-left-width: 1px;">
+            <engine:VisualElement name="action_bar" style="flex-grow: 0; margin-top: auto; margin-right: auto; margin-bottom: auto; margin-left: auto; flex-shrink: 0;" />
+        </engine:VisualElement>
+    </engine:GroupBox>
+</engine:UXML>

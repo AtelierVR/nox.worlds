@@ -1,0 +1,33 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/Nox/ModLoader/Resources/nox.cck.style.uss?fileID=7433441132597879392&amp;guid=b86e17dc57cb40d2a131e93eab25a53d&amp;type=3#nox.cck.style" />
+    <Style src="project://database/Assets/Mods/api.nox.world/assets/api.nox.world/loader-styles.uss?fileID=7433441132597879392&amp;guid=6168df34ccd6c6643b6dcfa44cb46e20&amp;type=3#loader-styles" />
+    <engine:VisualElement class="parent-container">
+        <engine:VisualElement class="main-container">
+            <engine:GroupBox class="section">
+                <engine:VisualElement class="search-container">
+                    <engine:TextField label="world.loader.search_label" placeholder-text="world.loader.search_placeholder" name="search-field" class="large" style="flex-grow: 1;" />
+                    <engine:Button text="world.loader.refresh" name="refresh-button" class="large" />
+                </engine:VisualElement>
+            </engine:GroupBox>
+            <engine:ScrollView class="border border-top" style="flex-grow: 1;">
+                <engine:GroupBox class="section" style="padding-bottom: 0;">
+                    <engine:Label text="world.loader.available_worlds" class="title" />
+                    <engine:Label text="world.loader.found_worlds" class="subtitle" />
+                </engine:GroupBox>
+                <engine:GroupBox name="world-list" class="section" style="padding-top: 0;" />
+            </engine:ScrollView>
+            <engine:GroupBox class="p-0 m-0 border border-top">
+                <engine:Foldout text="world.loader.advanced_options" value="true" class="section">
+                    <engine:Label text="world.loader.advanced_subtitle" class="subtitle" />
+                    <engine:VisualElement class="advanced-actions">
+                        <engine:Button text="world.loader.clear_cache" name="clear-cache-button" class="large" style="flex-grow: 1; margin-right: 2px;" />
+                        <engine:Button text="world.loader.open_builds" name="open-builds-button" class="folder large" style="flex-grow: 1; margin-left: 0;" />
+                    </engine:VisualElement>
+                    <engine:VisualElement>
+                        <engine:Button text="world.loader.build_settings" name="build-settings-button" class="settings large" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+            </engine:GroupBox>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

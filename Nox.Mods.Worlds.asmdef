@@ -1,0 +1,27 @@
+{
+    "name": "Nox.Mods.Worlds",
+    "rootNamespace": "",
+    "references": [
+        "Nox.CCK",
+        "UniTask",
+        "Nox.Worlds",
+        "Nox.Worlds.Scenes",
+        "Nox.Users",
+        "Nox.Search",
+        "Nox.Network",
+        "Nox.CCK.Network",
+        "Nox.Tables",
+        "Nox.UI",
+        "Nox.Instances",
+        "Nox.Sessions"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

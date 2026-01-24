@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Packages/api.nox.mod_loader/Resources/nox.cck.style.uss?fileID=7433441132597879392&amp;guid=ee18ab989d89a1a479332bd224e51c94&amp;type=3#nox.cck.style" />
+    <Style src="project://database/Packages/nox.worlds/Resources/WorldDescriptorEditor.uss?fileID=7433441132597879392&amp;guid=bc34efa890123456789012345678901b&amp;type=3#WorldDescriptorEditor" />
+    <ui:VisualElement name="root" style="flex-grow: 1;">
+        <ui:VisualElement name="header" class="header">
+            <ui:Label text="World Descriptor" name="header-label" class="header-label" />
+        </ui:VisualElement>
+        <ui:VisualElement style="padding-top: 10px; padding-right: 10px; padding-bottom: 0; padding-left: 10px;">
+            <ui:Label text="Publisher" style="font-size: 14px; -unity-font-style: bold; margin-bottom: 5px;" />
+            <uie:PropertyField name="target" label="Target Platform" />
+            <uie:PropertyField name="publishId" label="Publish ID" />
+            <uie:PropertyField name="publishServer" label="Publish Server" />
+            <uie:PropertyField name="publishVersion" label="Publish Version" />
+            
+            <ui:Label text="Modules" style="font-size: 14px; -unity-font-style: bold; margin-bottom: 5px; margin-top: 10px;" />
+            <uie:PropertyField name="modules" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

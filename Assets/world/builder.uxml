@@ -1,0 +1,36 @@
+<engine:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:engine="UnityEngine.UIElements" xmlns:editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <engine:VisualElement class="parent-container">
+        <engine:VisualElement class="main-container">
+            <engine:GroupBox class="section">
+                <editor:ObjectField label="Scene Descriptor" type="Nox.CCK.Worlds.WorldDescriptor, Nox.CCK.Worlds" name="descriptor-field" class="large readonly" />
+            </engine:GroupBox>
+            <engine:ScrollView class="border border-top" style="flex-grow: 1;">
+                <engine:GroupBox class="section" style="padding-bottom: 0;">
+                    <engine:Label text="Status &amp; Notifications" class="title" />
+                    <engine:Label text="Current build status and validation results" class="subtitle" />
+                </engine:GroupBox>
+                <engine:GroupBox name="notifications" class="section" style="padding-top: 0;" />
+            </engine:ScrollView>
+            <engine:GroupBox name="progress-container" class="border border-top section" style="display: none;">
+                <engine:Label text="Building..." name="progress-label" class="subtitle" />
+                <engine:ProgressBar name="progress-bar" class="large" />
+            </engine:GroupBox>
+            <engine:GroupBox class="p-0 m-0 border border-top">
+                <engine:Foldout text="Build" value="true" class="section">
+                    <engine:Label text="Configure build settings and target platform" class="subtitle" />
+                    <engine:VisualElement style="flex-direction: row;">
+                        <engine:EnumField label="Target" value="Center" type="Nox.CCK.Utils.Platform, Nox.CCK" name="platform-field" class="large" style="flex-grow: 1; margin-right: 1px;" />
+                        <engine:Button text="Detect" name="detect-platform" class="large" style="margin-left: 1px;" />
+                    </engine:VisualElement>
+                    <engine:VisualElement style="flex-direction: row;">
+                        <engine:TextField label="Output Folder" name="output-folder-field" class="large" style="flex-grow: 1; margin-right: 1px;" />
+                        <engine:Button text="Browse" name="browse-output-button" class="large" style="margin-left: 1px;" />
+                    </engine:VisualElement>
+                    <engine:VisualElement style="margin-top: 8px;">
+                        <engine:Button text="Build" name="build-button" class="large" />
+                    </engine:VisualElement>
+                </engine:Foldout>
+            </engine:GroupBox>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>
