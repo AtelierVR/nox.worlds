@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -36,7 +36,7 @@ namespace Nox.Worlds.Runtime {
 
 		public static IUserAPI UserAPI
 			=> Instance.CoreAPI.ModAPI
-				.GetMod("user")
+				.GetMod("users")
 				?.GetInstance<IUserAPI>();
 
 		static internal ISearchAPI SearchAPI
@@ -188,20 +188,23 @@ namespace Nox.Worlds.Runtime {
 
 		#endregion
 
-		#region Caching
+	#region Caching
 
-		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default) {
-			var caching = Cache.AddDownload(url, hash, token);
-			if (progress != null) caching.OnProgressChanged.AddListener(progress);
-			return caching;
-		}
+	public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default) {
+		var caching = Cache.AddDownload(url, hash, token);
+		if (progress != null) caching.OnProgressChanged.AddListener(progress);
+		return caching;
+	}
 
-		public void RemoveFromCache(string hash)
-			=> Cache.Clear(hash);
+	public ICaching GetDownload(string url, string hash)
+		=> Cache.GetDownload(url, hash);
 
-		public bool HasInCache(string hash)
-			=> Cache.Has(hash);
+	public void RemoveFromCache(string hash)
+		=> Cache.Clear(hash);
 
-		#endregion
+	public bool HasInCache(string hash)
+		=> Cache.Has(hash);
+
+	#endregion
 	}
 }

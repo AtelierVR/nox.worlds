@@ -27,17 +27,18 @@ namespace Nox.Worlds.Runtime.Editor {
 				SetCurrentWorld(worldDescriptor);
 		}
 
-		public static void Find() {
-			try {
-				if (CurrentWorld?.gameObject.activeInHierarchy ?? false) return;
-				var activeWorlds = Object.FindObjectsByType<WorldDescriptor>(FindObjectsSortMode.None)
-					.Where(world => world.gameObject.activeInHierarchy)
-					.ToArray();
-				SetCurrentWorld(activeWorlds.Length > 0 ? activeWorlds[0] : null);
-			} catch {
-				SetCurrentWorld(null);
-			}
+	public static void Find() {
+		try {
+			// Vérifier si CurrentWorld est null, Missing ou valide et actif
+			if (CurrentWorld && CurrentWorld && CurrentWorld.gameObject.activeInHierarchy) return;
+			var activeWorlds = Object.FindObjectsByType<WorldDescriptor>(FindObjectsSortMode.None)
+				.Where(world => world.gameObject.activeInHierarchy)
+				.ToArray();
+			SetCurrentWorld(activeWorlds.Length > 0 ? activeWorlds[0] : null);
+		} catch {
+			SetCurrentWorld(null);
 		}
+	}
 
 		public static void SetCurrentWorld(WorldDescriptor newWorld) {
 			if (CurrentWorld == newWorld) return;

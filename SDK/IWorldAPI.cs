@@ -149,6 +149,14 @@ namespace Nox.Worlds {
 		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default);
 
 		/// <summary>
+		/// Gets an existing download from the cache.
+		/// </summary>
+		/// <param name="url">URL of the file being downloaded.</param>
+		/// <param name="hash">Hash of the file being downloaded.</param>
+		/// <returns>Returns the ICaching instance if a download is in progress, null otherwise.</returns>
+		public ICaching GetDownload(string url, string hash);
+
+		/// <summary>
 		/// Removes an asset from the cache using its hash.
 		/// </summary>
 		/// <param name="hash"></param>

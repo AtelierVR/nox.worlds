@@ -14,7 +14,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 		public static IUserAPI UserAPI
 			=> CoreAPI.ModAPI
-				.GetMod("user")
+				.GetMod("users")
 				?.GetInstance<IUserAPI>();
 
 		public void OnInitializeEditor(IEditorModCoreAPI api) {

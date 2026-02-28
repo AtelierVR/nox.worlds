@@ -23,6 +23,24 @@
       "website": "https://hactazia.fr/"
     }
   ],
+  "relations": [
+    {
+      "id": "ui",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "network",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "search",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "users",
+      "version": ">=1.0.0"
+    }
+  ],
   "constraints": [
     {
       "type": "after",
