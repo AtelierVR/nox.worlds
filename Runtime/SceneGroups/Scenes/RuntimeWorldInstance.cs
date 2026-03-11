@@ -29,24 +29,18 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 				return -1;
 
 			Prefab.SetActive(false);
-			var container = await Object.InstantiateAsync(Prefab);
-			if (container.Length != 1) {
-				foreach (var go in container)
-					go.Destroy();
-				return -1;
-			}
-
-			SceneManager.MoveGameObjectToScene(container[0], Scene);
+			var container = await Prefab.InstantiateAsync();
+			SceneManager.MoveGameObjectToScene(container, Scene);
 
 			var instance = new InstanceScene {
-				Container  = container[0],
-				Descriptor = container[0].GetComponentInChildren<IWorldDescriptor>(false)
+				Container  = container,
+				Descriptor = container.GetComponentInChildren<IWorldDescriptor>(false)
 			};
 
-			container[0].name = $"{GetType().Name}_{instance.GetId()}]";
+			container.name = $"{GetType().Name}_{instance.GetId()}]";
 
 			if (instance.Descriptor == null) {
-				container[0].Destroy();
+				container.Destroy();
 				return -1;
 			}
 
