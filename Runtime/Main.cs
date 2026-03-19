@@ -1,9 +1,10 @@
-﻿﻿using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Language;
 using Nox.CCK.Mods.Cores;
+using Nox.CCK.Mods.Events;
 using Nox.CCK.Mods.Initializers;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
@@ -59,13 +60,15 @@ namespace Nox.Worlds.Runtime {
 				.GetMod("session")
 				?.GetInstance<ISessionAPI>();
 
+		private EventSubscription[] _events = Array.Empty<EventSubscription>();
+
 		#endregion
 
 		#region initialization
 
 		public void OnInitializeMain(IMainModCoreAPI api) {
 			Instance = this;
-			CoreAPI = api;
+			CoreAPI  = api;
 
 			api.LoggerAPI.LogDebug("Initialized");
 			_lang = CoreAPI.AssetAPI.GetAsset<LanguagePack>("lang.asset");
@@ -75,11 +78,22 @@ namespace Nox.Worlds.Runtime {
 
 			Manager = new SceneGroupManager();
 			Network = new Network.Network();
-			Cache = new CacheManager();
+			Cache   = new CacheManager();
 			_search = new Search.Search();
 
-			USceneManager.sceneLoaded += OnSceneLoaded;
+			USceneManager.sceneLoaded   += OnSceneLoaded;
 			USceneManager.sceneUnloaded += OnSceneUnloaded;
+
+			_events = new[] {
+				api.EventAPI.Subscribe("user_update", OnUserUpdate),
+				api.EventAPI.Subscribe("user_logout", OnUserLogout),
+			};
+
+			var user = api.ModAPI.GetMod("users")
+				?.GetInstance<IUserAPI>()?.GetCurrent();
+			
+			if (user != null)
+				PredownloadHomeWorldAsync(user).Forget();
 		}
 
 		private bool OnCheckRequest(IWorldDescriptor descriptor) {
@@ -88,24 +102,30 @@ namespace Nox.Worlds.Runtime {
 			return valid;
 
 			void OnCallback(object[] args) {
-				if (args.Length > 0 && args[0] is false) valid = false;
+				if (args.Length > 0 && args[0] is false)
+					valid = false;
 			}
 		}
 
 		public async UniTask OnDisposeMainAsync() {
-			WorldSetup.OnCheckRequest = null;
-			USceneManager.sceneLoaded -= OnSceneLoaded;
+			WorldSetup.OnCheckRequest   =  null;
+			USceneManager.sceneLoaded   -= OnSceneLoaded;
 			USceneManager.sceneUnloaded -= OnSceneUnloaded;
 			LanguageManager.RemovePack(_lang);
+
+			foreach (var ev in _events)
+				CoreAPI.EventAPI.Unsubscribe(ev);
+			_events = Array.Empty<EventSubscription>();
+
 			if (Manager != null)
 				await Manager.Dispose();
 			Manager = null;
 			Cache?.Dispose();
 			_search?.Dispose();
-			Cache = null;
-			_search = null;
-			Network = null;
-			CoreAPI = null;
+			Cache    = null;
+			_search  = null;
+			Network  = null;
+			CoreAPI  = null;
 			Instance = null;
 
 		}
@@ -188,23 +208,112 @@ namespace Nox.Worlds.Runtime {
 
 		#endregion
 
-	#region Caching
+		#region Caching
 
-	public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default) {
-		var caching = Cache.AddDownload(url, hash, token);
-		if (progress != null) caching.OnProgressChanged.AddListener(progress);
-		return caching;
-	}
+		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default) {
+			var caching = Cache.AddDownload(url, hash, token);
+			if (progress != null)
+				caching.OnProgressChanged.AddListener(progress);
+			return caching;
+		}
 
-	public ICaching GetDownload(string url, string hash)
-		=> Cache.GetDownload(url, hash);
+		public ICaching GetDownload(string url, string hash)
+			=> Cache.GetDownload(url, hash);
 
-	public void RemoveFromCache(string hash)
-		=> Cache.Clear(hash);
+		public void RemoveFromCache(string hash)
+			=> Cache.Clear(hash);
 
-	public bool HasInCache(string hash)
-		=> Cache.Has(hash);
+		public bool HasInCache(string hash)
+			=> Cache.Has(hash);
 
-	#endregion
+		#endregion
+
+		#region Home World Pre-download
+
+		private void OnUserUpdate(EventData context) {
+			if (!context.TryGet<ICurrentUser>(0, out var user) || user == null) {
+				// user_update avec null = déconnexion (InvokeLogout → InvokeUpdate(null))
+				ClearWorldConfig();
+				return;
+			}
+			PredownloadHomeWorldAsync(user).Forget();
+		}
+
+		private static void OnUserLogout(EventData context) {
+			ClearWorldConfig();
+		}
+
+		private static void ClearWorldConfig() {
+			var config = Config.Load();
+			config.Remove("world.hash");
+			config.Remove("world.id");
+			config.Save();
+		}
+
+		private async UniTask PredownloadHomeWorldAsync(ICurrentUser user) {
+			var homeId = user.GetHomeId();
+			if (string.IsNullOrEmpty(homeId)) {
+				// Pas de home world : on efface la config pour que le default soit utilisé
+				ClearWorldConfig();
+				return;
+			}
+
+			var identifier = WorldIdentifier.From(homeId);
+			if (!identifier.IsValid) {
+				CoreAPI.LoggerAPI.LogWarning($"[World] Home world identifier '{homeId}' is invalid, skipping pre-download.");
+				return;
+			}
+
+			// Recherche de l'asset compatible avec la plateforme et le moteur courants
+			var req = new AssetSearchRequest {
+				Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
+				Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
+				Limit     = 1,
+			};
+
+			IAssetSearchResponse response;
+			try {
+				var server = identifier.IsLocal ? null : identifier.Server;
+				response = await SearchAssets(identifier, req, server);
+			} catch (Exception e) {
+				CoreAPI.LoggerAPI.LogWarning($"[World] Failed to search assets for home world '{homeId}': {e.Message}");
+				return;
+			}
+
+			var asset = response?.Assets?.FirstOrDefault();
+			if (asset == null || string.IsNullOrEmpty(asset.Hash) || string.IsNullOrEmpty(asset.Url)) {
+				CoreAPI.LoggerAPI.LogWarning($"[World] No compatible asset found for home world '{homeId}' (platform={req.Platforms[0]}, engine={req.Engines[0]}).");
+				return;
+			}
+
+			// Téléchargement si absent du cache
+			if (!HasInCache(asset.Hash)) {
+				CoreAPI.LoggerAPI.LogDebug($"[World] Pre-downloading home world '{homeId}' (hash: {asset.Hash})...");
+				try {
+					var download = DownloadToCache(asset.Url, hash: asset.Hash);
+					await download.Start();
+				} catch (Exception e) {
+					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download failed for home world '{homeId}': {e.Message}");
+					return;
+				}
+
+				if (!HasInCache(asset.Hash)) {
+					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download of home world '{homeId}' completed but hash '{asset.Hash}' not found in cache.");
+					return;
+				}
+			} else {
+				CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{homeId}' already in cache (hash: {asset.Hash}).");
+			}
+
+			// Sauvegarde dans la config pour le chargement offline
+			var config = Config.Load();
+			config.Set("world.hash", asset.Hash);
+			config.Set("world.id", identifier.ToString(identifier.IsLocal ? null : identifier.Server));
+			config.Save();
+
+			CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{homeId}' ready. Config updated (hash: {asset.Hash}).");
+		}
+
+		#endregion
 	}
 }
