@@ -67,12 +67,12 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		private static WorldPage OnPageByIdentifier(IMenu menu, object[] context, WorldIdentifier identifier) {
 			var page = new WorldPage {
-				MId = menu.GetId(),
-				_context = context,
+				MId         = menu.Id,
+				_context    = context,
 				_identifier = identifier,
-				World = null,
-				Asset = null,
-				Version = identifier.Version
+				World       = null,
+				Asset       = null,
+				Version     = identifier.Version
 			};
 			page.Refresh(true).Forget();
 			return page;
@@ -80,12 +80,12 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		private static WorldPage OnPageByWorld(IMenu menu, object[] context, IWorld world, IWorldAsset asset) {
 			var page = new WorldPage {
-				MId = menu.GetId(),
-				_context = context,
+				MId         = menu.Id,
+				_context    = context,
 				_identifier = world.Identifier,
-				World = world,
-				Asset = asset,
-				Version = world.Identifier.Version
+				World       = world,
+				Asset       = asset,
+				Version     = world.Identifier.Version
 			};
 			if (page.Asset == null)
 				page.FetchAsset(true).Forget();

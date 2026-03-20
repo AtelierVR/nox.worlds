@@ -91,7 +91,7 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 			var prefab    = Client.GetAsset<GameObject>("ui:prefabs/grid_item.prefab");
 			var instance  = Instantiate(prefab, parent);
 			var component = instance.AddComponent<HomeWidget>();
-			component._mid = menu.GetId();
+			component._mid = menu.Id;
 
 			var button = Reference.GetComponent<Button>("button", instance);
 			button.onClick.AddListener(component.OnClick);
