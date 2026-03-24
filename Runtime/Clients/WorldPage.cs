@@ -141,6 +141,11 @@ namespace Nox.Worlds.Runtime.Clients {
 			=> GetDownload()?.Cancel();
 
 		public void DownloadAsset() {
+			if (Asset == null) {
+				Logger.LogWarning("Cannot download asset, asset is not loaded yet.");
+				return;
+			}
+
 			if (IsDownloading().Item1) {
 				Logger.Log("Asset is already downloading, no need to start again.");
 				return;
@@ -177,6 +182,10 @@ namespace Nox.Worlds.Runtime.Clients {
 				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_removed", OnCacheUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("user_update", OnUserUpdate),
 			};
+
+			if (Asset == null && World != null && !_isLoading)
+				FetchAsset(true).Forget();
+				
 			_component.UpdateInstances(World).Forget();
 		}
 

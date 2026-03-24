@@ -33,6 +33,12 @@ namespace Nox.Worlds.Runtime.Clients {
 		public  GameObject              descriptionContainer;
 		public  TextLanguage            descriptionText;
 		public  RectTransform           actions;
+		public  Button                  offlineButton;
+
+		public void UpdateAssetAvailability(bool hasAsset) {
+			if (cacheButton)   cacheButton.interactable   = hasAsset;
+			if (offlineButton) offlineButton.interactable = hasAsset;
+		}
 
 		public void UpdateError(string error) {
 			title.UpdateText("world.error");
@@ -43,6 +49,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			withThumbnail.SetActive(false);
 			withoutThumbnail.SetActive(true);
 			descriptionContainer.SetActive(false);
+			UpdateAssetAvailability(false);
 		}
 
 		public void UpdateLoading() {
@@ -54,6 +61,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			withThumbnail.SetActive(false);
 			withoutThumbnail.SetActive(true);
 			descriptionContainer.SetActive(false);
+			UpdateAssetAvailability(false);
 		}
 
 		public void UpdateContent(IWorld world, IWorldAsset asset) {
@@ -78,6 +86,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			UpdateThumbnail(world).Forget();
 			UpdateInstances(world).Forget();
 
+			UpdateAssetAvailability(asset != null);
 			HoverCache(_isCachedHover);
 			_isHome = Page.IsHome();
 			HoverHome(_isHomeHover);
@@ -463,6 +472,7 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			var offline             = Instantiate(actionButtonAsset, component.actions);
 			var offlineEventTrigger = Reference.GetComponent<EventTrigger>("button", offline);
+			component.offlineButton      = Reference.GetComponent<Button>("button", offline);
 			component.offlineIcon        = Reference.GetComponent<Image>("image", offline);
 			component.offlineLabel       = Reference.GetComponent<TextLanguage>("text", offline);
 			component.offlineIcon.sprite = Client.GetAsset<Sprite>("ui:icons/distance.png");
