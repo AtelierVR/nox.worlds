@@ -49,7 +49,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{ide}");
 			if (request == null) {
 				Logger.LogError($"Failed to find the server for world {ide}");
 				return null;
@@ -81,7 +81,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var request = await RequestNode.To(address, $"/api/worlds{data}");
+			var request = await RequestNode.To(address, $"/worlds{data}");
 			if (request == null) {
 				Logger.LogError("Failed to find the server for world search");
 				return null;
@@ -116,7 +116,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var request = await RequestNode.To(address, "/api/worlds");
+			var request = await RequestNode.To(address, "/worlds");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world creation");
 				return null;
@@ -159,7 +159,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{ide}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
@@ -199,7 +199,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{ide}");
 			if (request == null) {
 				Logger.LogError($"Failed to find the server for world {ide}");
 				return false;
@@ -235,7 +235,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide.ToString()}/assets{data}");
+			var request = await RequestNode.To(address, $"/worlds/{ide.ToString()}/assets{data}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide} assets");
 				return null;
@@ -277,7 +277,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide}/assets");
+			var request = await RequestNode.To(address, $"/worlds/{ide}/assets");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
@@ -339,7 +339,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return false;
 			}
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide.ToString()}/thumbnail");
+			var request = await RequestNode.To(address, $"/worlds/{ide.ToString()}/thumbnail");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return false;
@@ -399,7 +399,7 @@ namespace Nox.Worlds.Runtime.Network {
 		if (address == ide.Server)
 			ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-		var request = await RequestNode.To(address, $"/api/worlds/{ide}/assets/{assetId}/file");
+		var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/file");
 		if (request == null) {
 			Logger.LogError($"Failed to create request for world {ide}");
 			return null;
@@ -454,7 +454,7 @@ namespace Nox.Worlds.Runtime.Network {
 		if (address == ide.Server)
 			ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-		var request = await RequestNode.To(address, $"/api/worlds/{ide}/assets/{assetId}/status");
+		var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/status");
 		if (request == null) {
 			Logger.LogError($"Failed to create request for world {ide}");
 			return null;
@@ -501,7 +501,7 @@ namespace Nox.Worlds.Runtime.Network {
 			if (address == ide.Server)
 				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
-			var request = await RequestNode.To(address, $"/api/worlds/{ide}/assets/{assetId}/file");
+			var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/file");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
