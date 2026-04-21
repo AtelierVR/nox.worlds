@@ -10,21 +10,19 @@ namespace Nox.Worlds.Runtime.Network {
 			=> AssetStatusTypeExtensions.FromString(InitStatus);
 
 		[JsonProperty("progress")]
-		public uint Progress { get; private set;  }
+		public uint Progress { get; private set; }
 
 		[JsonProperty("queue_position")]
-		public uint QueuePosition { get; private set;  }
+		public uint QueuePosition { get; private set; }
 
 		[JsonProperty("message")]
-		public string Message { get; private set;  }
+		public string Message { get; private set; }
 
 		[JsonProperty("hash")]
-		public string Hash { get; private set;  }
+		public string Hash { get; private set; }
 
-		[JsonProperty("size")]
-		public long? _initSize;
-
-		public long Size => _initSize ?? -1;
+		[JsonProperty("size", NullValueHandling = NullValueHandling.Ignore)]
+		public long Size { get; private set; }
 
 		[JsonProperty("error")]
 		public string Error { get; internal set; }

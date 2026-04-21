@@ -1,7 +1,6 @@
 ﻿using Cysharp.Threading.Tasks;
 using Nox.CCK.Language;
 using Nox.CCK.Utils;
-using Nox.CCK.Worlds;
 using Nox.UI;
 using Nox.UI.Widgets;
 using Nox.Users;
@@ -22,7 +21,7 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 		private TextLanguage      _label;
 
 		private void OnClick()
-			=> Client.UiAPI?.SendGoto(_mid, WorldPage.GetStaticKey(), "identifier", GetHomeIdentifier());
+			=> Client.UiAPI?.SendGoto(_mid, WorldPage.GetStaticKey(), "identifier", GetHome());
 
 		public string GetKey()
 			=> GetDefaultKey();
@@ -33,12 +32,12 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 		public int GetPriority()
 			=> 99;
 
-		internal static WorldIdentifier GetHomeIdentifier(ICurrentUser current = null)
-			=> WorldIdentifier.From((current ?? Main.UserAPI.GetCurrent())?.GetHomeId());
+		static internal Identifier GetHome(ICurrentUser current = null)
+			=> (current ?? Main.UserAPI.Current).Home;
 
 		public async UniTask UpdateContent() {
-			var identifier = GetHomeIdentifier();
-			if (!identifier.IsValid) {
+			var identifier = GetHome();
+			if (!identifier.IsValid()) {
 				_container.SetActive(false);
 				_label.UpdateText("world.no_home");
 				return;
@@ -83,7 +82,7 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 		}
 
 		public static bool TryMake(IMenu menu, RectTransform parent, out (GameObject, IWidget) values) {
-			if (!GetHomeIdentifier().IsValid) {
+			if (!GetHome().IsValid()) {
 				values = (null, null);
 				return false;
 			}

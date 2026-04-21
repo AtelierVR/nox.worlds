@@ -58,26 +58,24 @@ namespace Nox.Worlds.Pipeline {
 				result = await Build(data);
 			} catch (Exception e) {
 				result = new BuildResult {
-					Type = BuildResultType.Failed,
+					Type    = BuildResultType.Failed,
 					Message = $"Build failed with exception: {e.Message}"
 				};
 				Logger.LogError(result.Message);
-			}
-			finally {
+			} finally {
 				IsBuilding = false;
 			}
 
 			if (result.Type == BuildResultType.Success) {
 				Logger.OpenDialog("Build Success", "The world has been built successfully!", "OK");
-			}
-			else Logger.OpenDialog("Build Failed", result.Message, "OK");
+			} else
+				Logger.OpenDialog("Build Failed", result.Message, "OK");
 		}
 
 		public static async UniTask<BuildResult> Build(BuildData data) {
 			// Wrap user progress callback to also emit UnityEvent
 			var userProgress = data.ProgressCallback;
-			data.ProgressCallback = (p, m) =>
-			{
+			data.ProgressCallback = (p, m) => {
 				try {
 					OnBuildProgress.Invoke(p, m);
 				} catch {
@@ -144,7 +142,7 @@ namespace Nox.Worlds.Pipeline {
 						EditorSceneManager.RestoreSceneManagerSetup(rollback);
 						return Finish(
 							new BuildResult {
-								Type = BuildResultType.Failed,
+								Type    = BuildResultType.Failed,
 								Message = "Failed to save open scenes. Please ensure all scenes are saved before building."
 							}
 						);
@@ -196,7 +194,7 @@ namespace Nox.Worlds.Pipeline {
 
 					return Finish(
 						new BuildResult {
-							Type = BuildResultType.Success,
+							Type   = BuildResultType.Success,
 							Output = assetBundleResult.Output
 						}
 					);
@@ -206,12 +204,11 @@ namespace Nox.Worlds.Pipeline {
 					Logger.LogError(new Exception("Build failed with exception", e));
 					return Finish(
 						new BuildResult {
-							Type = BuildResultType.Failed,
+							Type    = BuildResultType.Failed,
 							Message = e.Message + "\nSee console for details."
 						}
 					);
-				}
-				finally {
+				} finally {
 					// Cleanup state
 					IsBuilding = false;
 				}
@@ -219,7 +216,7 @@ namespace Nox.Worlds.Pipeline {
 				Logger.LogError(new Exception("Build failed with exception", e));
 				return Finish(
 					new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = e.Message + "\nSee console for details."
 					}
 				);
@@ -232,36 +229,36 @@ namespace Nox.Worlds.Pipeline {
 		private static BuildResult ValidateBuildPrerequisites(BuildData data) {
 			if (IsBuilding)
 				return new BuildResult {
-					Type = BuildResultType.AlreadyBuilding,
+					Type    = BuildResultType.AlreadyBuilding,
 					Message = "A build is already in progress."
 				};
 
 			if (EditorApplication.isCompiling)
 				return new BuildResult {
-					Type = BuildResultType.EditorCompiling,
+					Type    = BuildResultType.EditorCompiling,
 					Message = "Unity is currently compiling scripts. Please wait until the compilation is complete."
 				};
 
 			if (EditorApplication.isPlaying)
 				return new BuildResult {
-					Type = BuildResultType.EditorPlaying,
+					Type    = BuildResultType.EditorPlaying,
 					Message = "Unity is currently in play mode. Please stop playing before building."
 				};
 
 			if (data.Target == Platform.None)
 				return new BuildResult {
-					Type = BuildResultType.InvalidTarget,
+					Type    = BuildResultType.InvalidTarget,
 					Message = "No build target specified. Please select a valid target platform."
 				};
 
 			if (!data.Target.IsSupported())
 				return new BuildResult {
-					Type = BuildResultType.UnsupportedTarget,
+					Type    = BuildResultType.UnsupportedTarget,
 					Message = $"The build target {data.Target} is not supported."
 				};
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
+				Type   = BuildResultType.Success,
 				Output = data.OutputPath
 			};
 		}
@@ -272,14 +269,14 @@ namespace Nox.Worlds.Pipeline {
 		private static BuildResult PrepareTemporaryDirectories(BuildData data) {
 			if (!data.Descriptor || !data.Descriptor.gameObject)
 				return new BuildResult {
-					Type = BuildResultType.InvalidScenes,
+					Type    = BuildResultType.InvalidScenes,
 					Message = "The WorldDescriptor is not set or the game object is invalid."
 				};
 
 			var mainScene = data.Descriptor.gameObject.scene;
 			if (!mainScene.IsValid() || !mainScene.isLoaded)
 				return new BuildResult {
-					Type = BuildResultType.InvalidScenes,
+					Type    = BuildResultType.InvalidScenes,
 					Message = "The scene is not valid. Please ensure the scene is properly set up."
 				};
 
@@ -289,7 +286,7 @@ namespace Nox.Worlds.Pipeline {
 					Directory.Delete(tempPath, true);
 				} catch (Exception e) {
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = $"Failed to delete temporary directory: {e.Message}"
 					};
 				}
@@ -297,7 +294,7 @@ namespace Nox.Worlds.Pipeline {
 			Directory.CreateDirectory(tempPath);
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
+				Type   = BuildResultType.Success,
 				Output = tempPath
 			};
 		}
@@ -317,7 +314,7 @@ namespace Nox.Worlds.Pipeline {
 			var compiler = new Compiler(compilableScripts);
 			if (!await compiler.Compile())
 				return new BuildResult {
-					Type = BuildResultType.Failed,
+					Type    = BuildResultType.Failed,
 					Message = "Script compilation failed. Original scenes have been restored from backup."
 				};
 
@@ -329,7 +326,8 @@ namespace Nox.Worlds.Pipeline {
 
 			foreach (var script in removeScripts)
 				try {
-					if (script == null) continue;
+					if (script == null)
+						continue;
 					Logger.Log($"Removing script: {script.GetType().Name}");
 					script.OnRemoveOnBuild();
 					if (script is Object scriptObject) // In case the script removed itself
@@ -350,7 +348,7 @@ namespace Nox.Worlds.Pipeline {
 							.Concat(new[] { "See console for details." })
 					)
 				};
-			
+
 			// Force asset database refresh to ensure files are written to disk
 			AssetDatabase.SaveAssets();
 			AssetDatabase.Refresh();
@@ -359,7 +357,7 @@ namespace Nox.Worlds.Pipeline {
 			await UniTask.Yield();
 
 			return new BuildResult {
-				Type = BuildResultType.Success,
+				Type   = BuildResultType.Success,
 				Output = null
 			};
 		}
@@ -377,7 +375,7 @@ namespace Nox.Worlds.Pipeline {
 				// Validate world GameObject before processing
 				if (!worldGameObject)
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "World GameObject is null or invalid."
 					};
 
@@ -405,7 +403,7 @@ namespace Nox.Worlds.Pipeline {
 							Logger.LogError($"  - GameObject '{go?.name}' at component index {index}");
 
 						return new BuildResult {
-							Type = BuildResultType.Failed,
+							Type    = BuildResultType.Failed,
 							Message = $"World GameObject contains {problematicComponents.Count} problematic component(s) that prevent scene processing. Please fix these issues manually."
 						};
 					}
@@ -422,7 +420,7 @@ namespace Nox.Worlds.Pipeline {
 					File.Delete(testFile);
 				} catch (Exception e) {
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = $"Cannot write to temporary directory '{tempPath}': {e.Message}"
 					};
 				}
@@ -442,13 +440,15 @@ namespace Nox.Worlds.Pipeline {
 				};
 
 				void CheckForProblematicComponents(GameObject go) {
-					if (!go) return;
+					if (!go)
+						return;
 
 					// Check if the GameObject has any components that might prevent scene processing
 					var components = go.GetComponents<Component>();
 					for (var i = 0; i < components.Length; i++) {
 						var component = components[i];
-						if (component) continue;
+						if (component)
+							continue;
 						problematicComponents.Add((go, i));
 					}
 
@@ -459,7 +459,7 @@ namespace Nox.Worlds.Pipeline {
 			} catch (Exception e) {
 				Logger.LogError(e);
 				return new BuildResult {
-					Type = BuildResultType.Failed,
+					Type    = BuildResultType.Failed,
 					Message = $"Failed to process world scene: {e.Message}"
 				};
 			}
@@ -475,25 +475,25 @@ namespace Nox.Worlds.Pipeline {
 				// Validate input data
 				if (data == null)
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "BuildData is null."
 					};
 
 				if (string.IsNullOrEmpty(data.TempPath))
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "Temporary path is null or empty."
 					};
 
 				if (string.IsNullOrEmpty(data.OutputPath))
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "Output path is null or empty."
 					};
 
 				if (string.IsNullOrEmpty(data.Filename))
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "Filename is null or empty."
 					};
 
@@ -510,7 +510,7 @@ namespace Nox.Worlds.Pipeline {
 
 				if (sceneFiles.Count == 0 || sceneFiles.Any(string.IsNullOrEmpty))
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "No world scene found to bundle."
 					};
 
@@ -532,20 +532,20 @@ namespace Nox.Worlds.Pipeline {
 							relativePath = "Assets" + relativePath[Application.dataPath.Length..];
 						validAssetFiles.Add(relativePath);
 						Logger.Log($"  Valid asset: {relativePath}");
-					}
-					else Logger.LogWarning($"Asset file does not exist: {assetFile}");
+					} else
+						Logger.LogWarning($"Asset file does not exist: {assetFile}");
 
 				if (validAssetFiles.Count == 0)
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "No valid asset files found for bundling."
 					};
 
 				// Create AssetBundleBuild
-				var assetBundleBuilds = new AssetBundleBuild[1];
+				var assetBundleBuilds = new AssetBundleBuild[ 1 ];
 				assetBundleBuilds[0] = new AssetBundleBuild {
-					assetBundleName = data.Filename,
-					assetNames = validAssetFiles.ToArray(),
+					assetBundleName  = data.Filename,
+					assetNames       = validAssetFiles.ToArray(),
 					addressableNames = validAssetFiles.Select(Path.GetFileNameWithoutExtension).ToArray()
 				};
 
@@ -554,13 +554,13 @@ namespace Nox.Worlds.Pipeline {
 				// Validate the AssetBundleBuild
 				if (assetBundleBuilds[0].assetNames.Length == 0)
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "No valid assets found for AssetBundle build."
 					};
 
 				if (string.IsNullOrEmpty(assetBundleBuilds[0].assetBundleName))
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "AssetBundle name is null or empty."
 					};
 
@@ -573,7 +573,7 @@ namespace Nox.Worlds.Pipeline {
 				Directory.CreateDirectory(outputPath);
 
 				// Build options optimized for worlds with maximum compression
-				var options = BuildAssetBundleOptions.None | BuildAssetBundleOptions.ForceRebuildAssetBundle | BuildAssetBundleOptions.StrictMode;
+				var options = BuildAssetBundleOptions.ForceRebuildAssetBundle;
 
 				// Report progress: Building AssetBundle (this is the long operation)
 				data.ProgressCallback?.Invoke(0.88f, "Building world AssetBundle (this may take a while)...");
@@ -596,7 +596,7 @@ namespace Nox.Worlds.Pipeline {
 				if (!buildSuccess) {
 					Logger.LogError("World AssetBundle build failed. Check console for details.");
 					return new BuildResult {
-						Type = BuildResultType.Failed,
+						Type    = BuildResultType.Failed,
 						Message = "Failed to build world AssetBundle. Check console for details."
 					};
 				}
@@ -604,13 +604,13 @@ namespace Nox.Worlds.Pipeline {
 				Logger.Log($"World AssetBundle '{data.Filename}' built successfully at: {outputPath}");
 				Logger.Log($"World scenes built without dependencies");
 				return new BuildResult {
-					Type = BuildResultType.Success,
+					Type   = BuildResultType.Success,
 					Output = Path.Combine(outputPath, data.Filename)
 				};
 			} catch (Exception e) {
 				Logger.LogError($"World AssetBundle build failed: {e.Message}");
 				return new BuildResult {
-					Type = BuildResultType.Failed,
+					Type    = BuildResultType.Failed,
 					Message = $"World AssetBundle build failed: {e.Message}"
 				};
 			}
@@ -672,33 +672,60 @@ namespace Nox.Worlds.Pipeline {
 				AssetDatabase.Refresh();
 				AssetDatabase.SaveAssets();
 
-				// If legacy fails, try with CompatibilityBuildPipeline
-				var manifest = CompatibilityBuildPipeline.BuildAssetBundles(
-					outputPath,
-					assetBundleBuilds,
-					options,
-					buildTarget
-				);
+				// Sanitize bundle names: Unity's BuildPipeline rejects names with dots or hyphens.
+				// Build with safe names, then rename the output files to the original names.
+				var sanitizedBuilds = assetBundleBuilds.Select(b => {
+					var s = b;
+					s.assetBundleName = Regex.Replace(b.assetBundleName, @"[.\-]", "_");
+					return s;
+				}).ToArray();
 
-				bool success = manifest;
+				var success = false;
 
-				if (success) {
-					Logger.Log("AssetBundle build completed successfully with CompatibilityBuildPipeline.");
+				try {
+					success = BuildPipeline.BuildAssetBundles(outputPath, assetBundleBuilds, options, buildTarget);
+				} catch (Exception e) {
+					Logger.LogDebug($"BuildPipeline.BuildAssetBundles failed: {e.Message}");
 				}
-				else {
-					Logger.LogError("Both BuildPipeline methods failed. No manifest was created.");
-
-					// Additional debugging information
-					Logger.LogError($"Output path contents:");
-					if (Directory.Exists(outputPath)) {
-						var files = Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories);
-						foreach (var file in files) {
-							Logger.LogError($"  - {file}");
-						}
+				
+				if (!success)
+					try {
+						success = CompatibilityBuildPipeline.BuildAssetBundles(outputPath, sanitizedBuilds, options, buildTarget);
+					} catch (Exception e) {
+						Logger.LogDebug($"CompatibilityBuildPipeline failed: {e.Message}");
 					}
+				
+				if (!success) {
+					Logger.LogError("AssetBundle build failed. No manifest was created.");
+					if (!Directory.Exists(outputPath))
+						return false;
+
+					var files = Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories);
+					foreach (var file in files)
+						Logger.LogError($"  - {file}");
+					return false;
 				}
 
-				return success;
+				// Rename sanitized output files back to the original bundle names
+				for (var i = 0; i < assetBundleBuilds.Length; i++) {
+					var originalName  = assetBundleBuilds[i].assetBundleName;
+					var sanitizedName = sanitizedBuilds[i].assetBundleName;
+
+					if (originalName == sanitizedName)
+						continue;
+
+					var src = Path.Combine(outputPath, sanitizedName);
+					var dst = Path.Combine(outputPath, originalName);
+					if (!File.Exists(src))
+						continue;
+
+					if (File.Exists(dst))
+						File.Delete(dst);
+					File.Move(src, dst);
+				}
+
+				Logger.Log("AssetBundle build completed successfully.");
+				return true;
 			} catch (Exception e) {
 				Logger.LogError($"AssetBundle build failed with exception: {e.Message}");
 				Logger.LogError($"Stack trace: {e.StackTrace}");
@@ -710,13 +737,15 @@ namespace Nox.Worlds.Pipeline {
 		/// Cleans up missing components from GameObject and its children
 		/// </summary>
 		private static void CleanupMissingComponents(GameObject rootObject) {
-			if (!rootObject) return;
+			if (!rootObject)
+				return;
 
 			var allGameObjects = new List<GameObject> { rootObject };
 			GetAllChildren(rootObject, allGameObjects);
 
 			foreach (var go in allGameObjects) {
-				if (!go) continue;
+				if (!go)
+					continue;
 
 				// Count removed components for logging
 				var initialComponentCount = go.GetComponentCount();
@@ -725,7 +754,7 @@ namespace Nox.Worlds.Pipeline {
 				GameObjectUtility.RemoveMonoBehavioursWithMissingScript(go);
 
 				var finalComponentCount = go.GetComponentCount();
-				var removedCount = initialComponentCount - finalComponentCount;
+				var removedCount        = initialComponentCount - finalComponentCount;
 
 				if (removedCount > 0) {
 					Logger.Log($"Removed {removedCount} missing component(s) from GameObject '{go.name}'");
@@ -747,7 +776,8 @@ namespace Nox.Worlds.Pipeline {
 		/// </summary>
 		private static void ForceCleanProblematicComponents(List<(GameObject go, int index)> problematicComponents) {
 			foreach (var (go, index) in problematicComponents) {
-				if (!go) continue;
+				if (!go)
+					continue;
 
 				try {
 					// Try to get component at index and remove if null
@@ -768,17 +798,19 @@ namespace Nox.Worlds.Pipeline {
 		/// Final cleanup of any remaining null components
 		/// </summary>
 		private static void CleanupNullComponents(GameObject rootObject) {
-			if (!rootObject) return;
+			if (!rootObject)
+				return;
 
 			var allGameObjects = new List<GameObject> { rootObject };
 			GetAllChildren(rootObject, allGameObjects);
 
 			foreach (var go in allGameObjects) {
-				if (!go) continue;
+				if (!go)
+					continue;
 
 				try {
 					// Check for any remaining null components
-					var components = go.GetComponents<Component>();
+					var components        = go.GetComponents<Component>();
 					var hasNullComponents = components.Any(c => !c);
 
 					if (hasNullComponents) {
@@ -809,7 +841,7 @@ namespace Nox.Worlds.Pipeline {
 		/// <param name="platform"></param>
 		/// <returns>A filename in the format: date-sceneName.noxw</returns>
 		private static string GenerateDefaultFilename(string mainSceneName, Platform platform) {
-			var date = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
+			var date      = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
 			var sceneName = mainSceneName.ToLowerInvariant();
 
 			// Remove any invalid filename characters from scene name
@@ -824,7 +856,7 @@ namespace Nox.Worlds.Pipeline {
 		/// <returns>A random hash string</returns>
 		private static string GenerateRandomHash() {
 			var random = new Random();
-			var bytes = new byte[16];
+			var bytes  = new byte[ 16 ];
 			random.NextBytes(bytes);
 			return BitConverter.ToString(bytes).Replace("-", "").ToLowerInvariant();
 		}

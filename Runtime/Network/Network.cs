@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Newtonsoft.Json;
+using Nox.CCK.Convertors;
 using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
@@ -24,9 +26,19 @@ namespace Nox.Worlds.Runtime.Network {
 		/// </summary>
 		/// <param name="world"></param>
 		private void InvokeFetch(World world) {
-			if (world == null) return;
+			if (world == null)
+				return;
 			_fetchEvent.Invoke(world);
 			Main.Instance.CoreAPI.EventAPI.Emit("world_fetch", world);
+		}
+
+		private (string, string) Optimize(Identifier ide) {
+			var crt = Main.UserAPI?.Current?.Server;
+			if (!string.IsNullOrEmpty(crt))
+				return ide.IsLocal(crt)
+					? (ide.ToShortString(false), crt)
+					: (ide.ToShortString(), crt);
+			return (ide.ToShortString(), ide.Server);
 		}
 
 		/// <summary>
@@ -36,20 +48,14 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<World> Fetch(WorldIdentifier ide, string from = null, CancellationToken cancellationToken = default) {
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot fetch world {ide}: no server address provided.");
+		public async UniTask<World> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{id}");
 			if (request == null) {
 				Logger.LogError($"Failed to find the server for world {ide}");
 				return null;
@@ -75,7 +81,7 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
+			var address = from ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search worlds: no server address provided.");
 				return null;
@@ -96,7 +102,7 @@ namespace Nox.Worlds.Runtime.Network {
 
 			var worlds = response.Data;
 			worlds.Server = address;
-			foreach (var world in worlds.Worlds)
+			foreach (var world in worlds.Items)
 				InvokeFetch(world);
 
 			return worlds;
@@ -110,7 +116,7 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public async UniTask<World> Create(CreateWorldRequest data, string from, CancellationToken cancellationToken = default) {
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
+			var address = from ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot create world: no server address provided.");
 				return null;
@@ -143,23 +149,16 @@ namespace Nox.Worlds.Runtime.Network {
 		/// </summary>
 		/// <param name="ide"></param>
 		/// <param name="form"></param>
-		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<World> Update(WorldIdentifier ide, UpdateWorldRequest form, string from = null, CancellationToken cancellationToken = default) {
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot update world {ide}: no server address provided.");
+		public async UniTask<World> Update(Identifier ide, UpdateWorldRequest form, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{id}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
@@ -186,20 +185,14 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<bool> Delete(WorldIdentifier ide, string from = null, CancellationToken cancellationToken = default) {
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot delete world {ide}: no server address provided.");
+		public async UniTask<bool> Delete(Identifier ide, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return false;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide}");
+			var request = await RequestNode.To(address, $"/worlds/{id}");
 			if (request == null) {
 				Logger.LogError($"Failed to find the server for world {ide}");
 				return false;
@@ -222,20 +215,14 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<AssetSearchResponse> SearchAssets(WorldIdentifier ide, AssetSearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot search assets for world {ide}: no server address provided.");
+		public async UniTask<AssetSearchResponse> SearchAssets(Identifier ide, AssetSearchRequest data, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide.ToString()}/assets{data}");
+			var request = await RequestNode.To(address, $"/worlds/{id}/assets{data}");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide} assets");
 				return null;
@@ -250,8 +237,8 @@ namespace Nox.Worlds.Runtime.Network {
 
 			var assets = response.Data;
 			assets.Identifier = ide;
-			assets.Server = address;
-			assets.Request = data;
+			assets.Server     = address;
+			assets.Request    = data;
 
 			return assets;
 		}
@@ -264,20 +251,14 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<WorldAsset> CreateAsset(WorldIdentifier ide, CreateAssetRequest data, string from = null, CancellationToken cancellationToken = default) {
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot create asset for world {ide}: no server address provided.");
+		public async UniTask<WorldAsset> CreateAsset(Identifier ide, CreateAssetRequest data, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide}/assets");
+			var request = await RequestNode.To(address, $"/worlds/{id}/assets");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
@@ -305,23 +286,17 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		/// <exception cref="Exception"></exception>
-		public async UniTask<bool> UploadThumbnail(WorldIdentifier ide, Texture2D texture, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
+		public async UniTask<bool> UploadThumbnail(Identifier ide, Texture2D texture, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			if (!texture) {
 				Logger.LogError(new Exception($"Cannot upload thumbnail for world {ide}: texture is null."));
 				return false;
 			}
 
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot upload thumbnail for world {ide}: no server address provided.");
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return false;
 			}
-
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
 
 			// Convert texture to PNG byte array
 			byte[] imageData;
@@ -339,7 +314,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return false;
 			}
 
-			var request = await RequestNode.To(address, $"/worlds/{ide.ToString()}/thumbnail");
+			var request = await RequestNode.To(address, $"/worlds/{id}/thumbnail");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return false;
@@ -386,99 +361,87 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="onProgress"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-	public async UniTask<UploadAssetResponse> UploadAssetFile(WorldIdentifier ide, uint assetId, string filePath, string fileHash = null, string from = null, System.Action<float> onProgress = null, CancellationToken cancellationToken = default) {
-		if (ide.IsLocal)
-			ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
+		public async UniTask<UploadAssetResponse> UploadAssetFile(Identifier ide, uint assetId, string filePath, string fileHash = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				return null;
+			}
 
-		var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-		if (string.IsNullOrEmpty(address)) {
-			Logger.LogError($"Cannot upload asset file for world {ide}: no server address provided.");
-			return null;
+			var request = await RequestNode.To(address, $"/worlds/{id}/assets/{assetId}/file");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for world {ide}");
+				return null;
+			}
+
+			request.method = RequestExtension.Method.POST;
+			if (onProgress != null)
+				request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
+
+			request.SetBody(new List<IMultipartFormSection>() {
+				new MultipartFormFileSection(
+					"file",
+					await File.ReadAllBytesAsync(filePath, cancellationToken),
+					Path.GetFileName(filePath),
+					"application/octet-stream"
+				)
+			});
+
+			request.SetRequestHeader("Connection", "keep-alive");
+			if (!string.IsNullOrEmpty(fileHash))
+				request.SetRequestHeader("X-File-Hash", fileHash);
+
+			if (!await request.Send(cancellationToken)) {
+				Logger.LogError($"Failed during sending request to upload asset file for world {ide} on {address}");
+				return null;
+			}
+
+			if (request.responseCode != 202) {
+				Logger.LogError($"Status code {request.responseCode} received when uploading asset file for world {ide} on {address}, expected 202 Accepted.");
+				return null;
+			}
+
+			var response = await request.Node<UploadAssetResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to upload asset file for world {ide} on {address}: {response.Error.Message}");
+				return null;
+			}
+
+			return response.Data;
 		}
 
-		if (address == ide.Server)
-			ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
+		public async UniTask<AssetStatusResponse> GetAssetStatus(Identifier ide, uint assetId, CancellationToken cancellationToken = default) {
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
+				return null;
+			}
 
-		var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/file");
-		if (request == null) {
-			Logger.LogError($"Failed to create request for world {ide}");
-			return null;
+			var request = await RequestNode.To(address, $"/worlds/{id}/assets/{assetId}/status");
+			if (request == null) {
+				Logger.LogError($"Failed to create request for world {ide}");
+				return null;
+			}
+
+			await request.Send(cancellationToken);
+
+			if (!request.Ok()) {
+				Logger.LogError($"Failed to get asset status for world {ide} on {address}");
+				return null;
+			}
+
+			var response = await request.Node<AssetStatusResponse>(cancellationToken);
+			if (response.HasError()) {
+				Logger.LogError($"Failed to get asset status for world {ide} on {address}: {response.Error.Message}");
+				return null;
+			}
+
+			return response.Data;
 		}
 
-		request.method = RequestExtension.Method.POST;
-		if (onProgress != null)
-			request.HandleUploadProgress((progress, _) => onProgress?.Invoke(progress), cancellationToken);
-
-		request.SetBody(new List<IMultipartFormSection>() {
-			new MultipartFormFileSection(
-				"file",
-				await File.ReadAllBytesAsync(filePath, cancellationToken),
-				Path.GetFileName(filePath),
-				"application/octet-stream"
-			)
-		});
-
-		request.SetRequestHeader("Connection", "keep-alive");
-		if (!string.IsNullOrEmpty(fileHash))
-			request.SetRequestHeader("X-File-Hash", fileHash);
-
-		if (!await request.Send(cancellationToken)) {
-			Logger.LogError($"Failed during sending request to upload asset file for world {ide} on {address}");
-			return null;
-		}
-
-		if (request.responseCode != 202) {
-			Logger.LogError($"Status code {request.responseCode} received when uploading asset file for world {ide} on {address}, expected 202 Accepted.");
-			return null;
-		}
-
-		var response = await request.Node<UploadAssetResponse>(cancellationToken);
-		if (response.HasError()) {
-			Logger.LogError($"Failed to upload asset file for world {ide} on {address}: {response.Error.Message}");
-			return null;
-		}
-
-		return response.Data;
-	}
-
-	public async UniTask<AssetStatusResponse> GetAssetStatus(WorldIdentifier ide, uint assetId, string from = null, CancellationToken cancellationToken = default) {
-		if (ide.IsLocal)
-			ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-		var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-		if (string.IsNullOrEmpty(address)) {
-			Logger.LogError($"Cannot get asset status for world {ide}: no server address provided.");
-			return null;
-		}
-
-		if (address == ide.Server)
-			ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-		var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/status");
-		if (request == null) {
-			Logger.LogError($"Failed to create request for world {ide}");
-			return null;
-		}
-
-		await request.Send(cancellationToken);
-
-		if (!request.Ok()) {
-			Logger.LogError($"Failed to get asset status for world {ide} on {address}");
-			return null;
-		}
-
-		var response = await request.Node<AssetStatusResponse>(cancellationToken);
-		if (response.HasError()) {
-			Logger.LogError($"Failed to get asset status for world {ide} on {address}: {response.Error.Message}");
-			return null;
-		}
-
-		return response.Data;
-	}
-
-	/// <summary>
-	/// Download an asset file for a world from the specified server
-	/// </summary>
+		/// <summary>
+		/// Download an asset file for a world from the specified server
+		/// </summary>
 		/// <param name="ide"></param>
 		/// <param name="assetId"></param>
 		/// <param name="hash"></param>
@@ -486,22 +449,16 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="onProgress"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<string> DownloadAssetFile(WorldIdentifier ide, uint assetId, string hash = null, string from = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
+		public async UniTask<string> DownloadAssetFile(Identifier ide, uint assetId, string hash = null, Action<float> onProgress = null, CancellationToken cancellationToken = default) {
 			var output = Path.Join(Application.temporaryCachePath, string.IsNullOrEmpty(hash) ? $"{ide}_{assetId}" : hash);
 
-			if (ide.IsLocal)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, from);
-
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress() ?? ide.Server;
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError($"Cannot download asset file for world {ide}: no server address provided.");
+			var (id, address) = Optimize(ide);
+			if (address == Identifier.LOCAL_SERVER) {
+				Logger.LogError($"Cannot fetch world {ide} from {address}");
 				return null;
 			}
 
-			if (address == ide.Server)
-				ide = new WorldIdentifier(ide.Id, ide.Metadata, WorldIdentifier.LocalServer);
-
-			var request = await RequestNode.To(address, $"/worlds/{ide}/assets/{assetId}/file");
+			var request = await RequestNode.To(address, $"/worlds/{id}/assets/{assetId}/file");
 			if (request == null) {
 				Logger.LogError($"Failed to create request for world {ide}");
 				return null;
@@ -534,75 +491,60 @@ namespace Nox.Worlds.Runtime.Network {
 			return output;
 		}
 
-		/// <summary>
-		/// Key for the favorites table
-		/// </summary>
-		public const string FavoritesTableKey = "nox.worlds.favorites";
+		[Serializable]
+		public class Favorites : IFavorites {
+			[JsonProperty("label")]
+			public string Label { get; set; }
+			[JsonProperty("values"), JsonConverter(typeof(ArrayConverter<StringToIdentifierConverter>))]
+			#pragma warning disable UAC1001
+			public Identifier[] Values { get; set; }
+			#pragma warning restore UAC1001
+		}
 
 		/// <summary>
 		/// Fetch favorite worlds from the specified server
 		/// </summary>
-		/// <param name="from"></param>
 		/// <returns></returns>
-		public async UniTask<WorldIdentifier[]> FetchFavorites(string from = null) {
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError("Cannot fetch favorites: no server address provided.");
-				return Array.Empty<WorldIdentifier>();
-			}
-
-			var entry = await Main.TableAPI.Get(FavoritesTableKey, address);
-			if (entry != null)
-				return entry
-					.GetValue()
-					.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-					.Select(s => WorldIdentifier.From(s.Trim()))
-					.Where(i => i.IsValid)
-					.Distinct()
-					.ToArray();
-
-			Logger.LogError($"Failed to fetch favorites from {address}: entry not found.");
-			return Array.Empty<WorldIdentifier>();
+		public async UniTask<Favorites> FetchFavorites(uint group = 0, bool pub = true) {
+			var entry = await Main.TableAPI.Get($"{(pub ? "public." : "")}favorites.worlds.{group}");
+			return entry != null
+				? JsonConvert.DeserializeObject<Favorites>(entry.AsString)
+				: null;
 		}
 
 		/// <summary>
 		/// Add a world to favorites on the specified server
 		/// </summary>
 		/// <param name="identifier"></param>
-		/// <param name="from"></param>
+		/// <param name="group"></param>
+		/// <param name="pub"></param>
 		/// <returns></returns>
-		public async UniTask<WorldIdentifier[]> AddFavorite(WorldIdentifier identifier, string from = null)
-			=> await AddFavorites(new[] { identifier }, from);
+		public async UniTask<Favorites> AddFavorite(Identifier identifier, uint group = 0, bool pub = true)
+			=> await AddFavorites(new[] { identifier }, group, pub);
 
 		/// <summary>
 		/// Add worlds to favorites on the specified server
 		/// </summary>
 		/// <param name="identifier"></param>
-		/// <param name="from"></param>
+		/// <param name="group"></param>
+		/// <param name="pub"></param>
 		/// <returns></returns>
-		public async UniTask<WorldIdentifier[]> AddFavorites(WorldIdentifier[] identifier, string from = null) {
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError("Cannot add favorites: no server address provided.");
-				return Array.Empty<WorldIdentifier>();
-			}
-
-			var e = await FetchFavorites(from);
-			var newE = identifier
-				.Concat(e)
+		public async UniTask<Favorites> AddFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
+			var e = await FetchFavorites();
+			e.Values = identifier
+				.Concat(e.Values)
 				.Distinct()
 				.ToArray();
 
 			var entry = await Main.TableAPI.Set(
-				"nox.avatars.favorites",
-				string.Join(",", newE.Select(i => i.ToString())),
-				address
+				$"{(pub ? "public." : "")}favorites.worlds.{group}",
+				JsonConvert.SerializeObject(e)
 			);
 
 			if (entry != null)
-				return newE;
+				return null;
 
-			Logger.LogError($"Failed to add favorites on {address}: entry not found.");
+			Logger.LogError("Failed to add favorites: entry not found.");
 			return e;
 		}
 
@@ -610,40 +552,34 @@ namespace Nox.Worlds.Runtime.Network {
 		/// Remove a world from favorites on the specified server
 		/// </summary>
 		/// <param name="identifier"></param>
-		/// <param name="from"></param>
+		/// <param name="group"></param>
+		/// <param name="pub"></param>
 		/// <returns></returns>
-		public async UniTask<WorldIdentifier[]> RemoveFavorite(WorldIdentifier identifier, string from = null)
-			=> await RemoveFavorites(new[] { identifier }, from);
+		public async UniTask<Favorites> RemoveFavorite(Identifier identifier, uint group = 0, bool pub = true)
+			=> await RemoveFavorites(new[] { identifier }, group, pub);
 
 		/// <summary>
 		/// Remove worlds from favorites on the specified server
 		/// </summary>
 		/// <param name="identifier"></param>
-		/// <param name="from"></param>
+		/// <param name="group"></param>
+		/// <param name="pub"></param>
 		/// <returns></returns>
-		public async UniTask<WorldIdentifier[]> RemoveFavorites(WorldIdentifier[] identifier, string from = null) {
-			var address = from ?? Main.UserAPI?.GetCurrent()?.GetServerAddress();
-
-			if (string.IsNullOrEmpty(address)) {
-				Logger.LogError("Cannot remove favorites: no server address provided.");
-				return Array.Empty<WorldIdentifier>();
-			}
-
-			var e = await FetchFavorites(from);
-			var newE = e
+		public async UniTask<Favorites> RemoveFavorites(Identifier[] identifier, uint group = 0, bool pub = true) {
+			var e = await FetchFavorites();
+			e.Values = e.Values
 				.Where(i => !identifier.Contains(i))
 				.ToArray();
 
 			var entry = await Main.TableAPI.Set(
-				FavoritesTableKey,
-				string.Join(",", newE.Select(i => i.ToString())),
-				address
+				$"{(pub ? "public." : "")}favorites.worlds.{group}",
+				JsonConvert.SerializeObject(e)
 			);
 
 			if (entry != null)
-				return newE;
+				return null;
 
-			Logger.LogError($"Failed to add favorites on {address}: entry not found.");
+			Logger.LogError($"Failed to add favorites: entry not found.");
 			return e;
 		}
 	}

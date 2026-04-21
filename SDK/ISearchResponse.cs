@@ -28,7 +28,7 @@ namespace Nox.Worlds {
 		/// <summary>
 		/// The worlds returned by the search.
 		/// </summary>
-		public IWorld[] Worlds { get; }
+		public IWorld[] Items { get; }
 		
 		/// <summary>
 		/// The total number of worlds matching the search criteria.

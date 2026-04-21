@@ -9,7 +9,7 @@ namespace Nox.Worlds.Runtime.Network {
 	public class AssetSearchResponse : IAssetSearchResponse, INoxObject {
 		public AssetSearchRequest Request;
 		public string Server;
-		public IWorldIdentifier Identifier;
+		public Identifier Identifier;
 
 		[JsonProperty("total")]
 		public uint Total { get; private set; }
@@ -20,11 +20,11 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("offset")]
 		public uint Offset { get; private set; }
 
-		[JsonProperty("assets")]
-		public WorldAsset[] Assets { get; private set; }
+		[JsonProperty("items")]
+		public WorldAsset[] Items { get; private set; }
 
-		IWorldAsset[] IAssetSearchResponse.Assets
-			=> Assets.ToArray<IWorldAsset>();
+		IWorldAsset[] IAssetSearchResponse.Items
+			=> Items.ToArray<IWorldAsset>();
 
 		public bool HasNext()
 			=> Offset + Limit < Total;
@@ -38,7 +38,7 @@ namespace Nox.Worlds.Runtime.Network {
 		private UniTask<AssetSearchResponse> Previous()
 			=> HasNext()
 				? Main.Instance.Network.SearchAssets(
-					Identifier.ToString(),
+					Identifier,
 					new AssetSearchRequest {
 						Offset = Offset >= Limit ? Offset - Limit : 0,
 						Limit = Limit,
@@ -46,8 +46,7 @@ namespace Nox.Worlds.Runtime.Network {
 						Versions = Request.Versions,
 						Engines = Request.Engines,
 						Platforms = Request.Platforms
-					},
-					Server
+					}
 				)
 				: default;
 
@@ -57,7 +56,7 @@ namespace Nox.Worlds.Runtime.Network {
 		private UniTask<AssetSearchResponse> Next()
 			=> HasPrevious()
 				? Main.Instance.Network.SearchAssets(
-					Identifier.ToString(),
+					Identifier,
 					new AssetSearchRequest {
 						Offset = Offset + Limit,
 						Limit = Limit,
@@ -65,8 +64,7 @@ namespace Nox.Worlds.Runtime.Network {
 						Versions = Request.Versions,
 						Engines = Request.Engines,
 						Platforms = Request.Platforms
-					},
-					Server
+					}
 				)
 				: default;
 	}

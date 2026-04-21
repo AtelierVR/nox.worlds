@@ -62,7 +62,7 @@ namespace Nox.Worlds {
 		/// <param name="identifier">Identifier of the world to fetch.</param>
 		/// <param name="from">Where is the world fetched from, if null it will use the current server.</param>
 		/// <returns></returns>
-		public UniTask<IWorld> Fetch(IWorldIdentifier identifier, string from = null);
+		public UniTask<IWorld> Fetch(Identifier identifier);
 
 		/// <summary>
 		/// Searches for worlds based on the provided search request.
@@ -70,7 +70,7 @@ namespace Nox.Worlds {
 		/// <param name="data">Search request containing the search parameters.</param>
 		/// <param name="from">Server where the search is performed, if null it will use the current server.</param>
 		/// <returns></returns>
-		public UniTask<ISearchResponse> Search(ISearchRequest data, string from = null);
+		public UniTask<ISearchResponse> Search(ISearchRequest data);
 
 		/// <summary>
 		/// Creates a new world based on the provided creation request.
@@ -85,9 +85,8 @@ namespace Nox.Worlds {
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="form"></param>
-		/// <param name="from"></param>
 		/// <returns></returns>
-		public UniTask<IWorld> Update(IWorldIdentifier identifier, IUpdateWorldRequest form, string from = null);
+		public UniTask<IWorld> Update(Identifier identifier, IUpdateWorldRequest form);
 
 		/// <summary>
 		/// Deletes a world by its identifier.
@@ -95,26 +94,24 @@ namespace Nox.Worlds {
 		/// <param name="identifier"></param>
 		/// <param name="from"></param>
 		/// <returns></returns>
-		public UniTask<bool> Delete(IWorldIdentifier identifier, string from = null);
+		public UniTask<bool> Delete(Identifier identifier);
 
 		/// <summary>
 		/// Searches for assets associated with a world.
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="data"></param>
-		/// <param name="from"></param>
 		/// <returns></returns>
-		public UniTask<IAssetSearchResponse> SearchAssets(IWorldIdentifier identifier, IAssetSearchRequest data, string from = null);
+		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data);
 
 		/// <summary>
 		/// Uploads a thumbnail for a world asset.
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="texture"></param>
-		/// <param name="from"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public UniTask<bool> UploadThumbnail(IWorldIdentifier identifier, Texture2D texture, string from = null, Action<float> onProgress = null);
+		public UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null);
 
 		/// <summary>
 		/// Uploads a file for a world asset.
@@ -123,30 +120,27 @@ namespace Nox.Worlds {
 		/// <param name="assetId"></param>
 		/// <param name="fileName"></param>
 		/// <param name="fileHash"></param>
-		/// <param name="from"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public UniTask<IUploadAssetResponse> UploadAssetFile(IWorldIdentifier identifier, uint assetId, string fileName, string fileHash = null, string from = null, Action<float> onProgress = null);
+		public UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string fileName, string fileHash = null, Action<float> onProgress = null);
 
 		/// <summary>
 		/// Creates a new asset for a world.
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="data"></param>
-		/// <param name="from"></param>
 		/// <returns></returns>
-		public UniTask<IWorldAsset> CreateAsset(IWorldIdentifier identifier, ICreateAssetRequest data, string from = null);
+		public UniTask<IWorldAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data);
 
 		/// <summary>
 		/// Downloads a file for a world asset.
 		/// </summary>
 		/// <param name="url">URL of the file to download.</param>
 		/// <param name="hash">Expected hash of the file, used for integrity verification.</param>
-		/// <param name="from"></param>
 		/// <param name="progress"></param>
 		/// <param name="token">Cancellation token to cancel the download operation.</param>
 		/// <returns></returns>
-		public ICaching DownloadToCache(string url, string hash = null, string from = null, UnityAction<float> progress = null, CancellationToken token = default);
+		public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default);
 
 		/// <summary>
 		/// Gets an existing download from the cache.
@@ -173,23 +167,20 @@ namespace Nox.Worlds {
 		/// Adds a world to the favorites list.
 		/// </summary>
 		/// <param name="identifier">Identifier of the world to add to favorites.</param>
-		/// <param name="from">Server where the favorite is stored, if null it will use the current server.</param>
 		/// <returns></returns>
-		public UniTask<IWorldIdentifier[]> AddFavorite(IWorldIdentifier identifier, string from = null);
+		public UniTask<IFavorites> AddFavorite(Identifier identifier);
 
 		/// <summary>
 		/// Removes a world from the favorites list.
 		/// </summary>
 		/// <param name="identifier">Identifier of the world to remove from favorites.</param>
-		/// <param name="from">Server where the favorite is stored, if null it will use the current server.</param>
 		/// <returns></returns>
-		public UniTask<IWorldIdentifier[]> RemoveFavorite(IWorldIdentifier identifier, string from = null);
+		public UniTask<IFavorites> RemoveFavorite(Identifier identifier);
 
 		/// <summary>
 		/// Gets the list of favorite world identifiers.
 		/// </summary>
-		/// <param name="from">Server where the favorites are stored, if null it will use the current server.</param>
 		/// <returns></returns>
-		public UniTask<IWorldIdentifier[]> GetFavorites(string from = null);
+		public UniTask<IFavorites> GetFavorites();
 	}
 }

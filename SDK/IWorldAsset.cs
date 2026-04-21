@@ -1,3 +1,5 @@
+using Nox.CCK.Utils;
+
 namespace Nox.Worlds {
 	public interface IWorldAsset {
 		/// <summary>
@@ -68,5 +70,10 @@ namespace Nox.Worlds {
 		/// </summary>
 		/// <returns></returns>
 		public string[] Features { get; }
+
+		/// <summary>
+		/// Gets the identifier of the user who uploaded the asset.
+		/// </summary>
+		public Identifier Uploader { get; }
 	}
 }

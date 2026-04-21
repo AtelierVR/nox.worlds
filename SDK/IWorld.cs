@@ -1,3 +1,4 @@
+using Nox.CCK.Utils;
 namespace Nox.Worlds {
 	/// <summary>
 	/// Represents a virtual world with its properties and metadata.
@@ -32,27 +33,27 @@ namespace Nox.Worlds {
 		/// Server address where the world is hosted.
 		/// </summary>
 		public string Server { get; }
-		
+
 		/// <summary>
 		/// Owner of the world.
 		/// It can be converted to IUserIdentifier as UId.
 		/// </summary>
-		public string Owner { get; }
-		
+		public Identifier Owner { get; }
+
 		/// <summary>
 		/// Contributors to the world.
 		/// It can be converted to IUserIdentifiers as UId.
 		/// </summary>
-		public string[] Contributors { get; }
-		
+		public Identifier[] Contributors { get; }
+
 		/// <summary>
 		/// URL of the thumbnail image representing the world.
 		/// </summary>
 		public string Thumbnail { get; }
-		
+
 		/// <summary>
 		/// Unique world identifier.
 		/// </summary>
-		public IWorldIdentifier Identifier { get; }
+		public Identifier Identifier { get; }
 	}
 }

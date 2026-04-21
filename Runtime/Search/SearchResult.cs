@@ -17,7 +17,7 @@ namespace Nox.Worlds.Runtime.Search {
 
 		public IResultData[] Data
 			=> Response != null
-				? Response.Worlds
+				? Response.Items
 					.Select(x => new SearchData { Reference = x })
 					.Cast<IResultData>()
 					.ToArray()

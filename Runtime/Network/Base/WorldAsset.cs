@@ -1,5 +1,6 @@
 using System;
 using Newtonsoft.Json;
+using Nox.CCK.Convertors;
 using Nox.CCK.Utils;
 
 namespace Nox.Worlds.Runtime.Network {
@@ -26,17 +27,16 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("hash")]
 		public string Hash { get; private set; }
 
-		[JsonProperty("size")]
-		private uint? _size;
+		[JsonProperty("size", NullValueHandling = NullValueHandling.Ignore)]
+		public uint Size { get; private set; }
 
 		[JsonProperty("mods")]
 		public string[] Mods { get; private set; }
 
 		[JsonProperty("features")]
 		public string[] Features { get; private set; }
-
-		public uint Size
-			=> _size ?? 0;
-
+		
+		[JsonProperty("uploader"), JsonConverter(typeof(StringToIdentifierConverter))]
+		public Identifier Uploader { get; private set; }
 	}
 }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+using Nox.CCK.Utils;
 
 namespace Nox.Worlds {
 	/// <summary>
@@ -10,7 +11,7 @@ namespace Nox.Worlds {
 		/// Returns the world identifier.
 		/// </summary>
 		/// <returns></returns>
-		public IWorldIdentifier Identifier { get; set; }
+		public Identifier Identifier { get; set; }
 
 		/// <summary>
 		/// Returns all loaded scenes in the world.

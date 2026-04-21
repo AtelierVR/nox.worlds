@@ -16,28 +16,30 @@ using Transform = UnityEngine.Transform;
 
 namespace Nox.Worlds.Runtime.Clients {
 	public class WorldComponent : MonoBehaviour {
-		public  GameObject              withThumbnail;
-		public  GameObject              withoutThumbnail;
-		public  Image                   thumbnail;
-		public  TextLanguage            title;
-		public  TextLanguage            identifier;
-		public  TextLanguage            label;
-		public  Image                   labelIcon;
-		public  RectTransform           content;
-		public  WorldPage               Page;
+		public GameObject withThumbnail;
+		public GameObject withoutThumbnail;
+		public Image thumbnail;
+		public TextLanguage title;
+		public TextLanguage identifier;
+		public TextLanguage label;
+		public Image labelIcon;
+		public RectTransform content;
+		public WorldPage Page;
 		private CancellationTokenSource _thumbnailTokenSource;
 		private CancellationTokenSource _instanceTokenSource;
-		public  RectTransform           instanceList;
-		public  GameObject              instanceInfobox;
-		public  GameObject              instanceListContainer;
-		public  GameObject              descriptionContainer;
-		public  TextLanguage            descriptionText;
-		public  RectTransform           actions;
-		public  Button                  offlineButton;
+		public RectTransform instanceList;
+		public GameObject instanceInfobox;
+		public GameObject instanceListContainer;
+		public GameObject descriptionContainer;
+		public TextLanguage descriptionText;
+		public RectTransform actions;
+		public Button offlineButton;
 
 		public void UpdateAssetAvailability(bool hasAsset) {
-			if (cacheButton)   cacheButton.interactable   = hasAsset;
-			if (offlineButton) offlineButton.interactable = hasAsset;
+			if (cacheButton)
+				cacheButton.interactable = hasAsset;
+			if (offlineButton)
+				offlineButton.interactable = hasAsset;
 		}
 
 		public void UpdateError(string error) {
@@ -65,7 +67,8 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		public void UpdateContent(IWorld world, IWorldAsset asset) {
-			if (world == null) return;
+			if (world == null)
+				return;
 
 			title.UpdateText("world.title", new[] { world.Title });
 			label.UpdateText("world.about.title", new[] { world.Title ?? world.Identifier.ToString() });
@@ -80,7 +83,8 @@ namespace Nox.Worlds.Runtime.Clients {
 			if (!string.IsNullOrEmpty(world.Description)) {
 				descriptionText.UpdateText("world.description", new[] { world.Description });
 				descriptionContainer.SetActive(true);
-			} else descriptionContainer.SetActive(false);
+			} else
+				descriptionContainer.SetActive(false);
 
 
 			UpdateThumbnail(world).Forget();
@@ -167,10 +171,16 @@ namespace Nox.Worlds.Runtime.Clients {
 			if (isEmpty) {
 				instanceInfobox.SetActive(true);
 				instanceListContainer.SetActive(false);
-			} else UpdateLayout.UpdateImmediate(instanceList);
+			} else
+				UpdateLayout.UpdateImmediate(instanceList);
 		}
 
 		private async UniTask<IInstance[]> SearchInstances(IWorld world, string server, CancellationToken token, Action<IInstance[]> callback = null) {
+			if (world == null || !world.Identifier.IsValid()) {
+				Logger.LogError("Invalid world identifier", this, tag: "WorldComponent");
+				return Array.Empty<IInstance>();
+			}
+
 			if (token.IsCancellationRequested)
 				return Array.Empty<IInstance>();
 
@@ -180,30 +190,31 @@ namespace Nox.Worlds.Runtime.Clients {
 				return Array.Empty<IInstance>();
 			}
 
-			var request = instanceAPI
-				.MakeSearchRequest()
-				.SetWorld(world.Identifier);
+			var request = new CCK.Instances.SearchRequest {
+				World = world.Identifier
+			};
+
 
 			var response = await instanceAPI.Search(request, server)
 				.AttachExternalCancellation(token);
 			if (token.IsCancellationRequested)
 				return Array.Empty<IInstance>();
-			var res = response == null
-				? Array.Empty<IInstance>()
-				: response.GetInstances();
+			var res = response?.Items ?? Array.Empty<IInstance>();
 			callback?.Invoke(res);
 			return res;
 		}
 
 		public string[] GetSearchableServers() {
 			var x0 = Config.Load().Get("servers");
-			if (x0 == null) return Array.Empty<string>();
+			if (x0 == null)
+				return Array.Empty<string>();
 			var x1 = x0.ToObject<Dictionary<string, JObject>>();
 			var x2 = new List<string>();
 			foreach (var (address, value) in x1) {
 				var features = value["features"]?.Values<string>().ToArray() ?? Array.Empty<string>();
-				var search   = value["search"]?.ToObject<bool>()             ?? false;
-				if (!(search && features.Contains("instance"))) continue;
+				var search   = value["search"]?.ToObject<bool>() ?? false;
+				if (!(search && features.Contains("instance")))
+					continue;
 				x2.Add(address);
 			}
 
@@ -215,11 +226,11 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		#region Favorite Logic
 
-		private bool         _isFavorite      = false;
-		private bool         _isFavoriteHover = false;
-		public  Image        favoriteIcon;
-		public  Button       favoriteButton;
-		public  TextLanguage favoriteLabel;
+		private bool _isFavorite = false;
+		private bool _isFavoriteHover = false;
+		public Image favoriteIcon;
+		public Button favoriteButton;
+		public TextLanguage favoriteLabel;
 
 		private void HoverFavorite(bool isHover) {
 			_isFavoriteHover    = isHover;
@@ -236,18 +247,19 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private async UniTask OnFavoriteClickedAsync() {
-			if (!favoriteButton.interactable) return;
+			if (!favoriteButton.interactable)
+				return;
 
 			_isFavorite                 = !_isFavorite;
 			favoriteButton.interactable = false;
 			HoverFavorite(_isFavoriteHover);
-			var id = WorldIdentifier.From(Page.World.Identifier);
+			var id = Page.World.Identifier;
 
 			var favorites = _isFavorite
 				? await Main.Instance.Network.AddFavorite(id)
 				: await Main.Instance.Network.RemoveFavorite(id);
 
-			_isFavorite = favorites.Any(f => f.Equals(id));
+			_isFavorite = favorites.Values.Any(f => f.Equals(id));
 			HoverFavorite(_isFavoriteHover);
 
 			favoriteButton.interactable = true;
@@ -257,27 +269,29 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		#region Cache Logic
 
-		private bool         _isCachedHover      = false;
-		private string       _lastTextureCaching = "icons/0.png";
-		public  Image        cacheIcon;
-		public  Button       cacheButton;
-		public  Slider       cacheProgress;
-		public  TextLanguage cacheLabel;
+		private bool _isCachedHover = false;
+		private string _lastTextureCaching = "icons/0.png";
+		public Image cacheIcon;
+		public Button cacheButton;
+		public Slider cacheProgress;
+		public TextLanguage cacheLabel;
 
 		public void UpdateDownloading((bool, float) download) {
 			if (download.Item1) {
 				cacheProgress.value = download.Item2;
-			} else cacheProgress.value = 0;
+			} else
+				cacheProgress.value = 0;
 
 			HoverCache(_isCachedHover);
 		}
 
 		private void HoverCache(bool isHover) {
 			_isCachedHover = isHover;
-			var texture = ((Page.InCache() ? 1 : 0)     << 2)
+			var texture = ((Page.InCache() ? 1 : 0) << 2)
 				| ((Page.IsDownloading().Item1 ? 1 : 0) << 1)
-				| ((_isCachedHover ? 1 : 0)             << 0);
-			if (texture > 5) texture -= 4;
+				| ((_isCachedHover ? 1 : 0) << 0);
+			if (texture > 5)
+				texture -= 4;
 			if (!Page.IsDownloading().Item1)
 				cacheProgress.value = 0;
 
@@ -325,25 +339,23 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		#region Join Offline Logic
 
-		public Image        offlineIcon;
+		public Image offlineIcon;
 		public TextLanguage offlineLabel;
 
 		private void OnJoinOffline() {
 			var world = Page.World.Identifier;
-			
-			var meta = world.Metadata.ToDictionary(
-				kvp => kvp.Key,
-				kvp => kvp.Value.ToArray()
-			);
-			
-			meta.Add(WorldIdentifier.VersionKey, new []{ Page.Version.ToString() });
-			
-			world = new WorldIdentifier(
+
+			var meta = world.Query;
+
+			meta.Add("v", new[] { Page.Version.ToString() });
+
+			world = new Identifier(
+				"w",
 				world.Id,
 				meta,
 				world.Server
 			);
-			
+
 			Main.SessionAPI.TryMake(
 				"offline", new Dictionary<string, object> {
 					{ "world", world },
@@ -357,7 +369,8 @@ namespace Nox.Worlds.Runtime.Clients {
 		#region Make Instance Logic
 
 		private void OnMakeInstanceClicked() {
-			if (Page?.World == null) return;
+			if (Page?.World == null)
+				return;
 			Client.UiAPI?.SendGoto(Page.MId, "instance_create", Page.World, Page.Version == ushort.MaxValue ? null : Page.Version);
 		}
 
@@ -365,11 +378,11 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		#region Home Logic
 
-		private bool         _isHome      = false;
-		private bool         _isHomeHover = false;
-		public  Image        homeIcon;
-		public  TextLanguage homeLabel;
-		public  Button       homeButton;
+		private bool _isHome = false;
+		private bool _isHomeHover = false;
+		public Image homeIcon;
+		public TextLanguage homeLabel;
+		public Button homeButton;
 
 		public void UpdateHome(bool isHome) {
 			_isHome = isHome;
@@ -391,7 +404,8 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private async UniTask OnHomeClickedAsync() {
-			if (!homeButton.interactable) return;
+			if (!homeButton.interactable)
+				return;
 			var hasHome = Page.IsHome();
 			_isHome                 = !hasHome;
 			homeButton.interactable = false;
@@ -481,7 +495,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				offlineEventTrigger,
 				() => component.OnJoinOffline(),
 				() => { }, // No hover effects for now
-				() => { }  // No hover effects for now
+				() => { } // No hover effects for now
 			);
 
 			#endregion
@@ -498,7 +512,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				makeInstanceEventTrigger,
 				() => component.OnMakeInstanceClicked(),
 				() => { }, // No hover effects for now
-				() => { }  // No hover effects for now
+				() => { } // No hover effects for now
 			);
 
 			#endregion
@@ -601,7 +615,8 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		private static void SetupEvents(EventTrigger eventTrigger, Action click, Action enter, Action exit) {
-			if (!eventTrigger) return;
+			if (!eventTrigger)
+				return;
 			var entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
 			entry.callback.AddListener(_ => click());
 			eventTrigger.triggers.Add(entry);

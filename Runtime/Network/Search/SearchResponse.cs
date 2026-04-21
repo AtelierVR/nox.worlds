@@ -14,8 +14,8 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("ids")]
 		public uint[] Ids { get; private set; }
 
-		[JsonProperty("worlds")]
-		public World[] Worlds { get; private set; }
+		[JsonProperty("items")]
+		public World[] Items { get; private set; }
 
 		[JsonProperty("total")]
 		public uint Total { get; private set; }
@@ -26,8 +26,8 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("offset")]
 		public uint Offset { get; private set; }
 
-		IWorld[] ISearchResponse.Worlds
-			=> Worlds.ToArray<IWorld>();
+		IWorld[] ISearchResponse.Items
+			=> Items.ToArray<IWorld>();
 
 		public bool HasNext()
 			=> Offset + Limit < Total;

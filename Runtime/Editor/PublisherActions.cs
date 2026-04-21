@@ -13,8 +13,8 @@ namespace Nox.Worlds.Runtime.Editor {
 	// Actions partial class - handles attach, publish, and upload operations
 	public partial class PublisherInstance {
 		private async UniTask CheckLoginStatus() {
-			var user = Main.UserAPI.GetCurrent();
-			var isLoggedIn = user != null && !string.IsNullOrEmpty(user.GetServerAddress());
+			var user       = Main.UserAPI.Current;
+			var isLoggedIn = user != null && !string.IsNullOrEmpty(user.Server);
 
 			if (!isLoggedIn) {
 				UpdateDisplayState(DisplayState.NotLogged);
@@ -27,13 +27,11 @@ namespace Nox.Worlds.Runtime.Editor {
 				return;
 			}
 
-			if (_attachServerField != null)
-				_attachServerField.SetValueWithoutNotify(user.GetServerAddress());
+			_attachServerField?.SetValueWithoutNotify(user.Server);
 
 			if (descriptor.publishId > 0 && !string.IsNullOrEmpty(descriptor.publishServer)) {
 				await AttachWorldAsync(descriptor.publishServer, descriptor.publishId, false);
-			}
-			else {
+			} else {
 				UpdateDisplayState(DisplayState.NotAttached);
 			}
 		}
@@ -50,8 +48,8 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			var server = _attachServerField?.value;
 			if (string.IsNullOrEmpty(server)) {
-				var user = Main.UserAPI.GetCurrent();
-				server = user?.GetServerAddress();
+				var user = Main.UserAPI.Current;
+				server = user?.Server;
 			}
 
 			if (string.IsNullOrEmpty(server)) {
@@ -74,7 +72,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			Network.World world = null;
 			if (id > 0) {
 				Logger.LogDebug($"Attempting to attach world {id}");
-				world = await Main.Instance.Network.Fetch(new WorldIdentifier(id, null, server), server);
+				world = await Main.Instance.Network.Fetch(new Identifier(WorldIdentifierExtensions.WorldType, id, null, server));
 			}
 
 			if (world == null && createIfNotFound) {
@@ -86,8 +84,8 @@ namespace Nox.Worlds.Runtime.Editor {
 				Logger.LogDebug($"Attaching world {world}");
 				await UniTask.Delay(1000); // Small delay to improve UX
 
-				var user = Main.UserAPI.GetCurrent();
-				var isContributor = user != null && user.ToIdentifier().Equals(world.Owner);
+				var user          = Main.UserAPI.Current;
+				var isContributor = world.IsContributor(user.Identifier);
 
 				if (!isContributor) {
 					Logger.OpenDialog("Error", "You are not a contributor of this world.", "Ok");
@@ -107,7 +105,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				return null;
 			}
 
-			descriptor.publishId = world.Id;
+			descriptor.publishId     = world.Id;
 			descriptor.publishServer = world.Server;
 			EditorUtility.SetDirty(descriptor);
 			_world = world;
@@ -117,7 +115,8 @@ namespace Nox.Worlds.Runtime.Editor {
 		}
 
 		private async UniTask OnRefreshInfoAsync() {
-			if (_world == null) return;
+			if (_world == null)
+				return;
 			await AttachWorldAsync(_world.Server, _world.Id, false);
 		}
 
@@ -127,23 +126,21 @@ namespace Nox.Worlds.Runtime.Editor {
 				return;
 			}
 
-			var name = _infoNameField?.value ?? "";
+			var name        = _infoNameField?.value ?? "";
 			var description = _infoDescriptionField?.value ?? "";
 
 			var success = await Main.Instance.Network.Update(
-				_world.Id.ToString(),
+				_world.Identifier,
 				new UpdateWorldRequest {
-					Title = name,
+					Title       = name,
 					Description = description
-				},
-				_world.Server
+				}
 			);
 
 			if (success != null) {
 				_world = success;
 				UpdateWorldUI();
-			}
-			else {
+			} else {
 				Logger.OpenDialog("Error", "Failed to update world information.", "Ok");
 			}
 		}
@@ -176,7 +173,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			}
 
 			ShowBuildProgress(0f, "Verifying world...");
-			_world = await Main.Instance.Network.Fetch(_world.Id.ToString(), _world.Server);
+			_world = await Main.Instance.Network.Fetch(_world.Identifier);
 			if (_world == null) {
 				HideBuildProgress();
 				Logger.OpenDialog("Error", "Failed to verify world.", "Ok");
@@ -184,42 +181,40 @@ namespace Nox.Worlds.Runtime.Editor {
 			}
 
 			var tempBuildPath = CreateTempBuildPath();
-			var config = Config.Load();
+			var config        = Config.Load();
 			try {
 				// Check if asset already exists BEFORE building
 				ShowBuildProgress(0.1f, "Checking existing assets...");
 
 				var search = await Main.Instance.Network.SearchAssets(
-					_world.Id.ToString(),
+					_world.Identifier,
 					new AssetSearchRequest {
-						Versions = new[] { version },
+						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
-						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 						ShowEmpty = true,
-						Limit = 1,
-						Offset = 0
-					},
-					_world.Server
+						Limit     = 1,
+						Offset    = 0
+					}
 				);
 
-				var existingAsset = search?.Assets?.FirstOrDefault();
-				var assetAlreadyExists = existingAsset != null && !existingAsset.IsEmpty;
+				var existingAsset         = search?.Items?.FirstOrDefault();
+				var assetAlreadyExists    = existingAsset != null && !existingAsset.IsEmpty;
 				var strictVersionChecking = config.Get("sdk.strict_version", true);
-				var autoVersion = config.Get("sdk.auto_version", true);
+				var autoVersion           = config.Get("sdk.auto_version", true);
 
 				if (assetAlreadyExists) {
 					// Auto-increment has priority: if enabled, increment instead of blocking or overwriting
 					if (autoVersion) {
 						// Auto-increment: use version+1 instead of overwriting
-						version = (ushort)(version + 1);
+						version                   = (ushort)(version + 1);
 						descriptor.publishVersion = version;
 						EditorUtility.SetDirty(descriptor);
 						if (_assetVersionField != null)
 							_assetVersionField.SetValueWithoutNotify(version);
 
 						Logger.Log($"Asset version {version - 1} already exists. Auto-incremented to version {version}");
-					}
-					else if (strictVersionChecking) {
+					} else if (strictVersionChecking) {
 						// Strict mode without auto-increment: block the upload
 						HideBuildProgress();
 						ShowResultDialog(false, $"Asset version {version} already exists for {target.GetPlatformName()}.\n\nPlease increment the version number, enable 'Auto increment version', or disable 'Strict version checking' to overwrite.");
@@ -236,10 +231,10 @@ namespace Nox.Worlds.Runtime.Editor {
 				// Build the world
 				ShowBuildProgress(0.2f, "Building world...");
 				var buildData = new BuildData {
-					Descriptor = descriptor,
-					Target = target,
-					OutputPath = tempBuildPath,
-					ShowDialog = false,
+					Descriptor       = descriptor,
+					Target           = target,
+					OutputPath       = tempBuildPath,
+					ShowDialog       = false,
 					ProgressCallback = (progress, status) => ShowBuildProgress(0.2f + (progress * 0.5f), status)
 				};
 
@@ -271,30 +266,28 @@ namespace Nox.Worlds.Runtime.Editor {
 
 				// Search for asset again with the potentially updated version
 				search = await Main.Instance.Network.SearchAssets(
-					_world.Id.ToString(),
+					_world.Identifier,
 					new AssetSearchRequest {
-						Versions = new[] { version },
+						Versions  = new[] { version },
 						Platforms = new[] { target.GetPlatformName() },
-						Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+						Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 						ShowEmpty = true,
-						Limit = 1,
-						Offset = 0
-					},
-					_world.Server
+						Limit     = 1,
+						Offset    = 0
+					}
 				);
 
-				var asset = search?.Assets?.FirstOrDefault();
+				var asset = search?.Items?.FirstOrDefault();
 
 				if (asset == null) {
 					ShowBuildProgress(0.54f, "Creating asset entry...");
 					asset = await Main.Instance.Network.CreateAsset(
-						new WorldIdentifier(_world.Id, null, _world.Server),
+						new Identifier("w", _world.Id, null, _world.Server),
 						new CreateAssetRequest {
-							Version = version,
-							Engine = Constants.CurrentEngine.GetEngineName(),
+							Version  = version,
+							Engine   = Constants.CurrentEngine.GetEngineName(),
 							Platform = target.GetPlatformName()
-						},
-						_world.Server
+						}
 					);
 				}
 
@@ -307,13 +300,11 @@ namespace Nox.Worlds.Runtime.Editor {
 				// Upload the asset
 				ShowBuildProgress(0.8f, $"Uploading {sizeMb:F1} MB file...");
 				var uploadResponse = await Main.Instance.Network.UploadAssetFile(
-					new WorldIdentifier(_world.Id, null, _world.Server),
+					new Identifier("w", _world.Id, null, _world.Server),
 					asset.Id,
 					filePath,
 					fileHash,
-					_world.Server,
-					onProgress: progress =>
-					{
+					onProgress: progress => {
 						var sizeUploaded = progress * sizeMb;
 						ShowBuildProgress(0.8f + progress * 0.1f, $"Uploading... {sizeUploaded:F2} MB / {sizeMb:F2} MB - {progress * 100:F0}%");
 					}
@@ -330,10 +321,10 @@ namespace Nox.Worlds.Runtime.Editor {
 				// Poll asset status until processing is complete
 				ShowBuildProgress(0.9f, $"Processing asset... (Queue position: {uploadResponse.QueuePosition})");
 
-				const int maxAttempts = 300; // 5 minutes max with 1 second interval
-				var attempt = 0;
-				var isProcessing = true;
-				var nextTryAt = uploadResponse.NextTryAt;
+				const int maxAttempts  = 300; // 5 minutes max with 1 second interval
+				var       attempt      = 0;
+				var       isProcessing = true;
+				var       nextTryAt    = uploadResponse.NextTryAt;
 
 				while (isProcessing && attempt < maxAttempts) {
 					// Calculate delay based on NextTryAt if available
@@ -348,9 +339,8 @@ namespace Nox.Worlds.Runtime.Editor {
 					attempt++;
 
 					var status = await Main.Instance.Network.GetAssetStatus(
-						new WorldIdentifier(_world.Id, null, _world.Server),
-						asset.Id,
-						_world.Server
+						new Identifier("w", _world.Id, null, _world.Server),
+						asset.Id
 					);
 
 					if (status == null) {
@@ -402,8 +392,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				Logger.LogError($"Publish failed: {ex.Message}");
 				HideBuildProgress();
 				ShowResultDialog(false, $"Publish failed: {ex.Message}");
-			}
-			finally {
+			} finally {
 				// Clean up temp build
 				if (Directory.Exists(tempBuildPath)) {
 					try {
@@ -422,7 +411,8 @@ namespace Nox.Worlds.Runtime.Editor {
 			}
 
 			var descriptor = WorldDescriptorHelper.CurrentWorld;
-			if (!descriptor) return;
+			if (!descriptor)
+				return;
 
 			var target = descriptor.target;
 			if (target == Platform.None)
@@ -430,31 +420,27 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			ShowBuildProgress(0f, "Detecting latest version...");
 			var search = await Main.Instance.Network.SearchAssets(
-				_world.Id.ToString(),
+				_world.Identifier,
 				new AssetSearchRequest {
 					Platforms = new[] { target.GetPlatformName() },
-					Engines = new[] { Constants.CurrentEngine.GetEngineName() },
+					Engines   = new[] { Constants.CurrentEngine.GetEngineName() },
 					ShowEmpty = false,
-					Limit = 1,
-					Offset = 0
-				},
-				_world.Server
+					Limit     = 1,
+					Offset    = 0
+				}
 			);
 			HideBuildProgress();
 
-			if (search?.Assets != null && search.Assets.Length > 0) {
-				var latestVersion = search.Assets[0].Version;
+			if (search?.Items is { Length: > 0 }) {
+				var latestVersion = search.Items[0].Version;
 				descriptor.publishVersion = (ushort)(latestVersion + 1);
 				EditorUtility.SetDirty(descriptor);
-				if (_assetVersionField != null)
-					_assetVersionField.SetValueWithoutNotify(descriptor.publishVersion);
+				_assetVersionField?.SetValueWithoutNotify(descriptor.publishVersion);
 				Logger.Log($"Detected latest version: {latestVersion}. Set to {descriptor.publishVersion}.");
-			}
-			else {
+			} else {
 				descriptor.publishVersion = 1;
 				EditorUtility.SetDirty(descriptor);
-				if (_assetVersionField != null)
-					_assetVersionField.SetValueWithoutNotify(1);
+				_assetVersionField?.SetValueWithoutNotify(1);
 				Logger.Log("No existing versions found. Set to 1.");
 			}
 		}

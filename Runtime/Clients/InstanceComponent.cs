@@ -34,14 +34,14 @@ namespace Nox.Worlds.Runtime.Clients {
 			_instance = instance;
 			label.UpdateText(
 				"world.instance.label", new[] {
-					instance.GetName()
+					instance.Name
 				}
 			);
 			text.UpdateText(
 				"world.instance.text", new[] {
-					instance.GetTitle()
+					instance.Title
 					?? reference.Page.World.Title
-					?? instance.ToIdentifier().ToString()
+					?? instance.Identifier.ToString()
 				}
 			);
 			UpdateThumbnail(instance).Forget();
@@ -66,7 +66,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			_thumbnailTokenSource = new CancellationTokenSource();
-			var url = instance?.GetThumbnailUrl() ?? reference.Page.World.Thumbnail;
+			var url = instance?.Thumbnail ?? reference.Page.World.Thumbnail;
 
 			if (!string.IsNullOrEmpty(url)) {
 				var texture = await Main.NetworkAPI

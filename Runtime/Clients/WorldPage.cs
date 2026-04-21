@@ -13,7 +13,7 @@ using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.Clients {
 	public class WorldPage : IPage {
-		internal static string GetStaticKey()
+		static internal string GetStaticKey()
 			=> "world";
 
 		public string GetKey()
@@ -23,7 +23,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		private object[] _context;
 		private GameObject _content;
 		private WorldComponent _component;
-		private IWorldIdentifier _identifier;
+		private Identifier _identifier;
 		public IWorld World;
 		public IWorldAsset Asset;
 		public ushort Version = ushort.MaxValue;
@@ -45,18 +45,19 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		internal bool IsHome(ICurrentUser current = null)
-			=> WorldIdentifier.From((current ?? Main.UserAPI.GetCurrent())?.GetHomeId())
+			=> (current ?? Main.UserAPI.Current).Home
 				.Equals(World?.Identifier);
 
-		internal static IPage OnGotoAction(IMenu menu, object[] context) {
-			if (!T(context, 0, out string type)) return null;
+		static internal IPage OnGotoAction(IMenu menu, object[] context) {
+			if (!T(context, 0, out string type))
+				return null;
 			switch (type) {
 				case "id_server" when T(context, 1, out uint id0) && T(context, 2, out string ser0):
-					return OnPageByIdentifier(menu, context, new WorldIdentifier(id0, null, ser0));
+					return OnPageByIdentifier(menu, context, new Identifier(WorldIdentifierExtensions.WorldType, id0, null, ser0));
 				case "identifier" when T(context, 1, out string id2):
-					return OnPageByIdentifier(menu, context, WorldIdentifier.From(id2));
-				case "identifier" when T(context, 1, out IWorldIdentifier wi0):
-					return OnPageByIdentifier(menu, context, WorldIdentifier.From(wi0));
+					return OnPageByIdentifier(menu, context, Identifier.Parse(id2));
+				case "identifier" when T(context, 1, out Identifier wi0):
+					return OnPageByIdentifier(menu, context, wi0);
 				case "world" when T(context, 1, out IWorld w0):
 					var a0 = T(context, 2, out IWorldAsset asset) ? asset : null;
 					return OnPageByWorld(menu, context, w0, a0);
@@ -65,14 +66,14 @@ namespace Nox.Worlds.Runtime.Clients {
 			return null;
 		}
 
-		private static WorldPage OnPageByIdentifier(IMenu menu, object[] context, WorldIdentifier identifier) {
+		private static WorldPage OnPageByIdentifier(IMenu menu, object[] context, Identifier identifier) {
 			var page = new WorldPage {
 				MId         = menu.Id,
 				_context    = context,
 				_identifier = identifier,
 				World       = null,
 				Asset       = null,
-				Version     = identifier.Version
+				Version     = identifier.GetVersion()
 			};
 			page.Refresh(true).Forget();
 			return page;
@@ -85,7 +86,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				_identifier = world.Identifier,
 				World       = world,
 				Asset       = asset,
-				Version     = world.Identifier.Version
+				Version     = world.Identifier.GetVersion()
 			};
 			if (page.Asset == null)
 				page.FetchAsset(true).Forget();
@@ -93,7 +94,8 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private async UniTask Refresh(bool load) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			await FetchWorld();
 			await FetchAsset();
 			if (!load)
@@ -103,28 +105,32 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private async UniTask FetchWorld(bool update = false) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			_isLoading = true;
-			World = await Main.Instance.Network.Fetch(_identifier.ToString());
+			World      = await Main.Instance.Network.Fetch(_identifier);
 			_isLoading = false;
-			if (update) _component.UpdateContent(World, Asset);
+			if (update)
+				_component.UpdateContent(World, Asset);
 		}
 
 		private async UniTask FetchAsset(bool update = false) {
-			if (_isLoading) return;
+			if (_isLoading)
+				return;
 			_isLoading = true;
 			Asset = (await Main.Instance.Network.SearchAssets(
-					_identifier.ToString(),
+					_identifier,
 					new AssetSearchRequest {
-						Limit = 1,
-						Versions = new[] { Version },
-						Engines = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
+						Limit     = 1,
+						Versions  = new[] { Version },
+						Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
 						Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() }
 					}
-				)).Assets
+				)).Items
 				.FirstOrDefault();
 			_isLoading = false;
-			if (update) _component.UpdateContent(World, Asset);
+			if (update)
+				_component.UpdateContent(World, Asset);
 		}
 
 		public void RemoveDownload() {
@@ -169,7 +175,8 @@ namespace Nox.Worlds.Runtime.Clients {
 			=> Client.UiAPI.Get<IMenu>(MId);
 
 		public GameObject GetContent(RectTransform parent) {
-			if (_content) return _content;
+			if (_content)
+				return _content;
 			(_content, _component) = WorldComponent.Generate(this, parent);
 			_component.UpdateLoading();
 			return _content;
@@ -185,8 +192,9 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			if (Asset == null && World != null && !_isLoading)
 				FetchAsset(true).Forget();
-				
-			_component.UpdateInstances(World).Forget();
+
+			if (World != null)
+				_component.UpdateInstances(World).Forget();
 		}
 
 		private void OnUserUpdate(EventData context)
@@ -196,9 +204,12 @@ namespace Nox.Worlds.Runtime.Clients {
 			=> _component.UpdateDownloading(IsDownloading());
 
 		public void OnDisplay(IPage lastPage) {
-			if (World != null) _component.UpdateContent(World, Asset);
-			else if (_isLoading) _component.UpdateLoading();
-			else _component.UpdateError("World not found or loading failed.");
+			if (World != null)
+				_component.UpdateContent(World, Asset);
+			else if (_isLoading)
+				_component.UpdateLoading();
+			else
+				_component.UpdateError("World not found or loading failed.");
 		}
 
 		public void OnRemove() {
@@ -217,7 +228,8 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		public (bool, float) IsDownloading() {
 			var cache = GetDownload();
-			if (cache == null) return (false, 0f);
+			if (cache == null)
+				return (false, 0f);
 			return cache.IsRunning
 				? (true, cache.Progress)
 				: (false, 1f);

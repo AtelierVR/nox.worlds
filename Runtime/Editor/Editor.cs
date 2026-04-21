@@ -7,7 +7,7 @@ using Nox.Users;
 
 namespace Nox.Worlds.Runtime.Editor {
 	public class Editor : IEditorModInitializer {
-		internal static IEditorModCoreAPI CoreAPI;
+		static internal IEditorModCoreAPI CoreAPI;
 
 		private LanguagePack _lang;
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
@@ -24,7 +24,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			_events = new[] {
 				api.EventAPI.Subscribe("user_updated", UserConnectedNotification.OnUserUpdated),
 			};
-			UserConnectedNotification.OnUserUpdated(UserAPI.GetCurrent());
+			UserConnectedNotification.OnUserUpdated(UserAPI.Current);
 		}
 
 		public void OnDisposeEditor() {

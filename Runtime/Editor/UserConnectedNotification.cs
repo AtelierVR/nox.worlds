@@ -2,7 +2,7 @@ using Nox.CCK.Mods.Events;
 using Nox.Users;
 
 namespace Nox.Worlds.Runtime.Editor {
-	public class UserConnectedNotification {
+	public static class UserConnectedNotification {
 		private const string NotConnectedUid = "not_connected";
 		private const string ConnectedUid = "connected";
 
@@ -34,8 +34,8 @@ namespace Nox.Worlds.Runtime.Editor {
 				NotificationType.Info,
 				new[] {
 					"world.editor.notification.user_connected",
-					user.GetDisplay(),
-					user.ToIdentifier().ToString()
+					user.Display,
+					user.Identifier.ToString()
 				}
 			);
 			WorldNotificationHelper.Add(notification);

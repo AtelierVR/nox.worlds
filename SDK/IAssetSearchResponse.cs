@@ -27,7 +27,7 @@ namespace Nox.Worlds {
 		/// Gets the assets that match the search criteria at the specified offset and limit.
 		/// </summary>
 		/// <returns></returns>
-		public IWorldAsset[] Assets { get; }
+		public IWorldAsset[] Items { get; }
 
 		/// <summary>
 		/// Determines if there is a previous page of results.

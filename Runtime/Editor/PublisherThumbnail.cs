@@ -104,9 +104,8 @@ namespace Nox.Worlds.Runtime.Editor {
 				_thumbnailStatus.text = "Uploading thumbnail...";
 
 				var success = await Main.Instance.Network.UploadThumbnail(
-					_world.Id.ToString(),
+					_world.Identifier,
 					texture,
-					_world.Server,
 					progress => _thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%"
 				);
 

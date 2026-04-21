@@ -12,7 +12,7 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 		internal int Active = 0;
 		internal RuntimeWorldInstance[] Instances;
 		internal SceneGroupManager GroupManager;
-		public IWorldIdentifier Identifier { get; set; }
+		public Identifier Identifier { get; set; }
 
 		internal Scene[] GetUnityScenes()
 			=> Dimensions
