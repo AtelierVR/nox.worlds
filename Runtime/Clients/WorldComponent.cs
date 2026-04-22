@@ -439,7 +439,7 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			var component = content.AddComponent<WorldComponent>();
 			component.Page = worldPage;
-			content.name   = $"[{worldPage.GetKey()}_{content.GetInstanceID()}]";
+			content.name   = $"[{worldPage.GetKey()}_{content.GetEntityId().GetHashCode()}]";
 
 			var splitContent   = Reference.GetComponent<RectTransform>("content", content);
 			var containerAsset = Client.GetAsset<GameObject>("ui:prefabs/container.prefab");

@@ -7,6 +7,6 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 		public bool Visible = false;
 
 		public int GetId()
-			=> Descriptor.Anchor.GetInstanceID();
+			=> Descriptor.Anchor.GetEntityId().GetHashCode();
 	}
 }
