@@ -212,7 +212,6 @@ namespace Nox.Worlds.Runtime.Network {
 		/// </summary>
 		/// <param name="ide"></param>
 		/// <param name="data"></param>
-		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
 		public async UniTask<AssetSearchResponse> SearchAssets(Identifier ide, AssetSearchRequest data, CancellationToken cancellationToken = default) {

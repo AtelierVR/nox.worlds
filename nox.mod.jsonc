@@ -3,9 +3,9 @@
   "id": "nox.worlds",
   "provides": [
     "fr.hactazia.sdk.worlds",
-    "world"
+    "worlds"
   ],
-  "name": "World",
+  "name": "Worlds",
   "version": "1.0.0",
   "description": "Provides the World API for the game.",
   "license": "GPL-3.0",
@@ -38,6 +38,10 @@
     },
     {
       "id": "users",
+      "version": ">=1.0.0"
+    },
+    {
+      "id": "instances",
       "version": ">=1.0.0"
     }
   ],

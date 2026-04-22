@@ -20,10 +20,9 @@ namespace Nox.Worlds.Runtime.Clients {
 				.GetInstance<IUiAPI>();
 
 		static internal IInstanceAPI InstanceAPI
-			=> Main.Instance?.CoreAPI?.ModAPI?
-				.GetMod("instance")
-				?
-				.GetInstance<IInstanceAPI>();
+			=> Main.Instance?.CoreAPI?.ModAPI
+				?.GetMod("instances")
+				?.GetInstance<IInstanceAPI>();
 
 		public static T GetAsset<T>(ResourceIdentifier path) where T : UnityEngine.Object
 			=> Main.Instance?.CoreAPI?.AssetAPI != null
@@ -38,8 +37,8 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
 
-		internal static Client            Instance;
-		internal        IClientModCoreAPI CoreAPI;
+		internal static Client Instance;
+		internal IClientModCoreAPI CoreAPI;
 
 		public void OnInitializeClient(IClientModCoreAPI api) {
 			Instance = this;
@@ -51,22 +50,29 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private void OnGoto(EventData context) {
-			if (!context.TryGet(0, out int mid)) return;
-			if (!context.TryGet(1, out string key)) return;
+			if (!context.TryGet(0, out int mid))
+				return;
+			if (!context.TryGet(1, out string key))
+				return;
 			var menu = UiAPI?.Get<IMenu>(mid);
-			if (menu == null) return;
+			if (menu == null)
+				return;
 			IPage page = null;
 			if (WorldPage.GetStaticKey() == key)
 				page = WorldPage.OnGotoAction(menu, context.Data[2..]);
-			if (page == null) return;
+			if (page == null)
+				return;
 			Main.Instance.CoreAPI.EventAPI.Emit("menu_display", menu.Id, page);
 		}
 
 		private void OnWidgetRequest(EventData context) {
-			if (!context.TryGet(0, out int mid)) return;
-			if (!context.TryGet(1, out RectTransform tr)) return;
+			if (!context.TryGet(0, out int mid))
+				return;
+			if (!context.TryGet(1, out RectTransform tr))
+				return;
 			var menu = UiAPI?.Get<IMenu>(mid);
-			if (menu == null) return;
+			if (menu == null)
+				return;
 			List<(GameObject, IWidget)> widgets = new();
 			if (HomeWidget.TryMake(menu, tr, out var widget))
 				widgets.Add(widget);
