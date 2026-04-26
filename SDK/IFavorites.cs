@@ -7,6 +7,11 @@ namespace Nox.Worlds {
 	/// </summary>
 	public interface IFavorites {
 		/// <summary>
+		/// Gets the unique key associated with this collection of favorites.
+		/// </summary>
+		public string Key { get; }
+
+		/// <summary>
 		/// Gets the label associated with this collection of favorites.
 		/// </summary>
 		public string Label { get; }
