@@ -6,13 +6,8 @@ using Nox.CCK.Worlds;
 
 namespace Nox.Worlds.Runtime.Network {
 	public class SearchResponse : ISearchResponse, INoxObject {
-		public string Server;
-
-		[JsonProperty("query")]
-		public string Query { get; private set; }
-
-		[JsonProperty("ids")]
-		public uint[] Ids { get; private set; }
+		[JsonIgnore]
+		public ISearchRequest Request;
 
 		[JsonProperty("items")]
 		public World[] Items { get; private set; }
@@ -45,12 +40,12 @@ namespace Nox.Worlds.Runtime.Network {
 			=> HasNext()
 				? Main.Instance.Network.Search(
 					new SearchRequest {
-						Query = Query,
-						Ids = Ids,
-						Offset = Offset + Limit,
-						Limit = Limit
-					},
-					Server
+						Server      = Request.Server,
+						Query       = Request.Query,
+						Identifiers = Request.Identifiers,
+						Offset      = Offset + Limit,
+						Limit       = Limit
+					}
 				)
 				: default;
 
@@ -58,12 +53,12 @@ namespace Nox.Worlds.Runtime.Network {
 			=> HasPrevious()
 				? Main.Instance.Network.Search(
 					new SearchRequest {
-						Query = Query,
-						Ids = Ids,
-						Offset = Offset >= Limit ? Offset - Limit : 0,
-						Limit = Limit
-					},
-					Server
+						Server      = Request.Server,
+						Query       = Request.Query,
+						Identifiers = Request.Identifiers,
+						Offset      = Offset >= Limit ? Offset - Limit : 0,
+						Limit       = Limit
+					}
 				) : default;
 	}
 }

@@ -4,6 +4,12 @@ namespace Nox.Worlds {
 	/// </summary>
 	public interface ISearchRequest {
 		/// <summary>
+		/// Specifies the server to search for worlds.
+		/// If null or empty, the search will be performed on the current server.
+		/// </summary>
+		public string Server { get; set; }
+		
+		/// <summary>
 		/// The search query string.
 		/// This can include keywords, phrases, or specific terms to filter the search results.
 		/// </summary>
@@ -14,7 +20,7 @@ namespace Nox.Worlds {
 		/// If provided, the search will return only the worlds matching these IDs.
 		/// If empty or null, the search will consider all available worlds.
 		/// </summary>
-		public uint[] Ids { get; set; }
+		public uint[] Identifiers { get; set; }
 
 		/// <summary>
 		/// The offset for pagination.

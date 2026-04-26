@@ -77,11 +77,10 @@ namespace Nox.Worlds.Runtime.Network {
 		/// Search for worlds on the specified server
 		/// </summary>
 		/// <param name="data"></param>
-		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<SearchResponse> Search(SearchRequest data, string from = null, CancellationToken cancellationToken = default) {
-			var address = from ?? Main.UserAPI?.Current?.Server;
+		public async UniTask<SearchResponse> Search(SearchRequest data, CancellationToken cancellationToken = default) {
+			var address = data.Server ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot search worlds: no server address provided.");
 				return null;
@@ -101,7 +100,7 @@ namespace Nox.Worlds.Runtime.Network {
 			}
 
 			var worlds = response.Data;
-			worlds.Server = address;
+			worlds.Request = data;
 			foreach (var world in worlds.Items)
 				InvokeFetch(world);
 

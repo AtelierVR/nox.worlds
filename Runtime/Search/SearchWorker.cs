@@ -19,15 +19,17 @@ namespace Nox.Worlds.Runtime.Search {
 				return new SearchResult { Error = "Invalid server address." };
 			var data = await Main.Instance.Network.Search(
 				new SearchRequest {
-					Query = options.Query,
+					Server = Server,
+					Query  = options.Query,
 					Offset = options.Page * options.Limit,
-					Limit = options.Limit,
-				}, Server
+					Limit  = options.Limit,
+				}
 			);
-			if (data == null) return new SearchResult { Error = "Error fetching users." };
+			if (data == null)
+				return new SearchResult { Error = "Error fetching users." };
 			return new SearchResult {
 				Response = data,
-				Error = null
+				Error    = null
 			};
 		}
 	}

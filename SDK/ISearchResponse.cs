@@ -6,16 +6,6 @@ namespace Nox.Worlds {
 	/// </summary>
 	public interface ISearchResponse {
 		/// <summary>
-		/// The original query string used for the search.
-		/// </summary>
-		public string Query { get; }
-		
-		/// <summary>
-		/// The IDs used in the search.
-		/// </summary>
-		public uint[] Ids { get; }
-
-		/// <summary>
 		/// The limit used in the search.
 		/// </summary>
 		public uint Limit { get; }

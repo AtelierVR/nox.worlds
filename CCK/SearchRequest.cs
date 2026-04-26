@@ -6,9 +6,11 @@ using Nox.Worlds;
 
 namespace Nox.CCK.Worlds {
 	public class SearchRequest : ISearchRequest, INoxObject {
+		public string Server { get; set; } = null;
+		
 		public string Query { get; set; } = null;
 
-		public uint[] Ids { get; set; } = Array.Empty<uint>();
+		public uint[] Identifiers { get; set; } = Array.Empty<uint>();
 
 		public uint Offset { get; set; } = 0;
 
@@ -18,8 +20,8 @@ namespace Nox.CCK.Worlds {
 			var text = "";
 			if (!string.IsNullOrEmpty(Query))
 				text += (text.Length > 0 ? "&" : "") + $"query={Query}";
-			if (Ids != null)
-				text = Ids
+			if (Identifiers != null)
+				text = Identifiers
 					.Aggregate(text, (current, u) => current + (current.Length > 0 ? "&" : "") + $"id={u}");
 			if (Offset > 0)
 				text += (text.Length > 0 ? "&" : "") + $"offset={Offset}";
@@ -30,10 +32,10 @@ namespace Nox.CCK.Worlds {
 
 		public static SearchRequest From(ISearchRequest identifier)
 			=> new() {
-				Query  = identifier.Query,
-				Ids    = identifier.Ids,
-				Offset = identifier.Offset,
-				Limit  = identifier.Limit
+				Query       = identifier.Query,
+				Identifiers = identifier.Identifiers,
+				Offset      = identifier.Offset,
+				Limit       = identifier.Limit
 			};
 	}
 }
