@@ -34,6 +34,9 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("contributors"), JsonConverter(typeof(ArrayConverter<StringToIdentifierConverter>))]
 		public Identifier[] Contributors { get; private set; }
 
+		[JsonProperty("release")]
+		public ushort Release { get; private set; }
+
 		public Identifier Identifier
 			=> new("w", Id, null, Server);
 

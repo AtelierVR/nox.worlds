@@ -55,5 +55,11 @@ namespace Nox.Worlds {
 		/// Unique world identifier.
 		/// </summary>
 		public Identifier Identifier { get; }
+
+		/// <summary>
+		/// Is a <see cref="ushort"/> of the <see cref="IWorldAsset.Version"/>.
+		/// It is <see cref="ushort.MaxValue"/> when the world has no assets.
+		/// </summary>
+		public ushort Release { get; }
 	}
 }
