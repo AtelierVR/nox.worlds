@@ -1,13 +1,17 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Nox.AssetBundles;
+using Nox.CCK.AssetBundles;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.SceneGroups {
 	public class AssetBundleRuntimeWorldGroup : RuntimeWorldGroup {
-		private AssetBundle AssetBundle;
+		public IAsset Bundle;
+		public string Path;
+		public string CacheId;
 
 		public static string ParseGroup(string path) {
 			if (!string.IsNullOrEmpty(path))
@@ -19,10 +23,8 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 		public override async UniTask Dispose() {
 			await base.Dispose();
 
-			if (AssetBundle) {
-				await AssetBundle.UnloadAsync(true);
-				AssetBundle = null;
-			}
+			GlobalAssetBundleManager.DetachFile(Path, CacheId);
+			Bundle = null;
 		}
 
 		public static async UniTask<AssetBundleRuntimeWorldGroup> Load(string path, Action<float> progress, CancellationToken token) {
@@ -38,20 +40,33 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 				return null;
 			}
 
-			var bundle = await AssetBundle.LoadFromFileAsync(path)
-				.ToUniTask(
-					progress: new Progress<float>(p => progress?.Invoke(p * 0.3f)),
-					cancellationToken: token
+			var group = new AssetBundleRuntimeWorldGroup {
+				Path = path,
+				CacheId = nameof(AssetBundleRuntimeWorldGroup) + "_" + Guid.NewGuid(),
+			};
+
+			try {
+				group.Bundle = await GlobalAssetBundleManager.LoadFileAsync(
+					path,
+					group.CacheId,
+					new Progress<float>(p => progress?.Invoke(p * 0.3f))
 				);
+			} catch (Exception e) {
+				Logger.LogError(new Exception($"Exception while loading AssetBundle from path: {path}", e));
+				return null;
+			}
+
+			var bundle = group.Bundle?.AssetBundle;
 
 			if (!bundle) {
 				Logger.LogError($"Failed to load AssetBundle from path: {path}", tag: nameof(AssetBundleRuntimeWorldGroup));
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
 			if (token.IsCancellationRequested) {
 				Logger.LogWarning($"Loading AssetBundle {path} was cancelled after loading.", tag: nameof(AssetBundleRuntimeWorldGroup));
-				await bundle.UnloadAsync(true);
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
@@ -60,7 +75,7 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 			var scenes = bundle.GetAllScenePaths();
 			if (scenes.Length == 0 || string.IsNullOrEmpty(scenes[0])) {
 				Logger.LogError($"No scenes found in AssetBundle: {path}", tag: nameof(AssetBundleRuntimeWorldGroup));
-				await bundle.UnloadAsync(true);
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
@@ -74,14 +89,14 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 
 			if (!scene.IsValid()) {
 				Logger.LogError($"Failed to load scene from AssetBundle: {path}", tag: nameof(AssetBundleRuntimeWorldGroup));
-				await bundle.UnloadAsync(true);
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
 			if (token.IsCancellationRequested) {
 				Logger.LogWarning($"Loading scene from AssetBundle {path} was cancelled after loading.", tag: nameof(AssetBundleRuntimeWorldGroup));
 				await SceneManager.UnloadSceneAsync(scene);
-				await bundle.UnloadAsync(true);
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
@@ -96,12 +111,14 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 			if (!res.Success) {
 				Logger.LogError($"Failed to prepare world from AssetBundle: {path} ({res.Error})", tag: nameof(AssetBundleRuntimeWorldGroup));
 				await SceneManager.UnloadSceneAsync(scene);
-				await bundle.UnloadAsync(true);
+				GlobalAssetBundleManager.DetachFile(path, group.CacheId);
 				return null;
 			}
 
 			res.Runtime.Id = ParseGroup(path);
-			res.Runtime.AssetBundle = bundle;
+			res.Runtime.Bundle = group.Bundle;
+			res.Runtime.Path = group.Path;
+			res.Runtime.CacheId = group.CacheId;
 
 			progress?.Invoke(1f);
 
@@ -109,6 +126,6 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 		}
 
 		public override string ToString()
-			=> $"{GetType().Name}[Id={Id} Active={Active} AssetBundle={AssetBundle.name}]";
+			=> $"{GetType().Name}[Id={Id} Active={Active} Path={Path}]";
 	}
 }

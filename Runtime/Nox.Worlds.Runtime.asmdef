@@ -4,6 +4,8 @@
   "references": [
     "Nox.CCK",
     "UniTask",
+    "Nox.AssetBundles",
+    "Nox.CCK.AssetBundles",
     "Nox.Worlds",
     "Nox.CCK.Worlds",
     "Nox.Search",
