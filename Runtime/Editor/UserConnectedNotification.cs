@@ -1,8 +1,11 @@
 using Nox.CCK.Mods.Events;
 using Nox.Users;
+using UnityEditor;
 
 namespace Nox.Worlds.Runtime.Editor {
 	public static class UserConnectedNotification {
+		[InitializeOnLoadMethod]
+		private static void OnInitialize() => OnUserUpdated((ICurrentUser)null);
 		private const string NotConnectedUid = "not_connected";
 		private const string ConnectedUid = "connected";
 
