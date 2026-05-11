@@ -11,326 +11,413 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 776389e82c640c44086d3baf10dd1c7b, type: 3}
   m_Name: lang
-  m_EditorClassIdentifier:   
+  m_EditorClassIdentifier: Nox.CCK::Nox.CCK.Language.LanguagePack
   languages:
   - IETF: en-US
     entries:
     - key: world.search.data.title
-      value: "{0}"
+      value: '{0}'
     - key: world.search.title
-      value: "Worlds"
+      value: Worlds
     - key: world.search.placeholder
-      value: "Search worlds..."
+      value: Search worlds...
     - key: world.search.description
-      value: "Search for worlds by title, or description."
+      value: Search for worlds by title, or description.
     - key: world.search.worker.title
-      value: "{0}"
+      value: '{0}'
     - key: world.builder.logged_in
-      value: "You logged in as {0} ({1})."
+      value: You logged in as {0} ({1}).
     - key: world.builder.no_descriptor
-      value: "No world descriptor found.\nA world descriptor is required."
+      value: 'No world descriptor found.
+
+        A world descriptor is required.'
     - key: world.builder.no_build_platform
-      value: "No build platform selected.\nA build platform is required."
+      value: 'No build platform selected.
+
+        A build platform is required.'
     - key: world.builder.use_active_platform
-      value: "No build platform selected.\nThe builder will use the current active platform ({0})."
+      value: 'No build platform selected.
+
+        The builder will use the current
+        active platform ({0}).'
     - key: world.builder.unsupported_platform
-      value: "Platform {0} is not supported.\nPlease select a supported platform."
+      value: 'Platform {0} is not supported.
+
+        Please select a supported platform.'
     - key: world.builder.use_supported
-      value: "Use Supported"
+      value: Use Supported
     - key: world.builder.multiple_descriptors
-      value: "Multiple world descriptors found.\nThe first one will be used.\nOnly one is allowed."
+      value: 'Multiple world descriptors found.
+
+        The first one will be used.
+
+        Only
+        one is allowed.'
     - key: world.builder.create
-      value: "Create"
+      value: Create
     - key: world.builder.select
-      value: "Select"
+      value: Select
     - key: world.builder.remove_other
-      value: "Remove other"
+      value: Remove other
     - key: world.builder.no_user
-      value: "No user found.\nA user is required to publish a world."
+      value: 'No user found.
+
+        A user is required to publish a world.'
     - key: world.builder.login
-      value: "Login"
+      value: Login
     - key: world.builder.no_network_objects
-      value: "No network objects found.\nNetwork objects are optional."
+      value: 'No network objects found.
+
+        Network objects are optional.'
     - key: world.builder.network_object_null
-      value: "The connected object at position {0} is null."
+      value: The connected object at position {0} is null.
     - key: world.builder.normalize
-      value: "Normalize"
+      value: Normalize
     - key: world.builder.network_object_estimate
-      value: "The id of the connected object {0} will be changed from {1} to {2} at position {3}.\nThis may be due to a duplicate element or another element already using this id."
+      value: 'The id of the connected object {0} will be changed from {1} to {2}
+        at position {3}.
+
+        This may be due to a duplicate element or another
+        element already using this id.'
     - key: world.builder.no_spawns
-      value: "No spawns found.\nThe default spawn is the world descriptor."
+      value: 'No spawns found.
+
+        The default spawn is the world descriptor.'
     - key: world.builder.spawn_null
-      value: "The spawn at position {0} is null."
+      value: The spawn at position {0} is null.
     - key: world.builder.spawn_estimate
-      value: "The id of the spawn {0} will be changed from {1} to {2} at position {3}.\nThis may be due to a duplicate element or another element already using this id."
+      value: 'The id of the spawn {0} will be changed from {1} to {2} at position
+        {3}.
+
+        This may be due to a duplicate element or another element already
+        using this id.'
     - key: world.builder.no_scenes
-      value: "No additional scenes found.\nAdditional scenes are optional."
+      value: 'No additional scenes found.
+
+        Additional scenes are optional.'
     - key: world.builder.scene_null
-      value: "The scene at position {0} is null."
+      value: The scene at position {0} is null.
     - key: world.builder.scene_estimate
-      value: "The id of the scene {0} will be changed from {1} to {2} at position {3}.\nThis may be due to a duplicate element or another element already using this id."
+      value: 'The id of the scene {0} will be changed from {1} to {2} at position
+        {3}.
+
+        This may be due to a duplicate element or another element already
+        using this id.'
     - key: world.builder.play_mode
-      value: "Play mode is enabled.\nBuilding is disabled in play mode."
+      value: 'Play mode is enabled.
+
+        Building is disabled in play mode.'
     - key: world.builder.exit
-      value: "Exit"
+      value: Exit
     - key: world.builder.detect
-      value: "Detect"
+      value: Detect
     - key: world.builder.platform_mismatch
-      value: "Platform mismatch detected.\nCurrent Unity platform: {0}\nWorld target platform: {1}"
+      value: 'Platform mismatch detected.
+
+        Current Unity platform: {0}
+
+        World
+        target platform: {1}'
     - key: world.builder.use_current
-      value: "Use Current"
+      value: Use Current
     - key: world.builder.switch_platform
-      value: "Switch Platform"
+      value: Switch Platform
     - key: world.builder.error_no_descriptor
-      value: "No world descriptor found."
+      value: No world descriptor found.
     - key: world.builder.error_unsupported_target
-      value: "Unsupported build target."
+      value: Unsupported build target.
     - key: world.builder.error_no_output_folder
-      value: "No output folder specified."
+      value: No output folder specified.
     - key: world.builder.error_platform_not_supported
-      value: "{0} is not supported."
+      value: '{0} is not supported.'
     - key: world.builder.success_build
-      value: "Build success."
+      value: Build success.
     - key: world.builder.ok
-      value: "Ok"
+      value: Ok
     - key: world.builder.success
-      value: "Success"
+      value: Success
     - key: world.builder.error
-      value: "Error"
+      value: Error
     - key: world.builder.title
-      value: "World Builder"
+      value: World Builder
     - key: world.loader.title
-      value: "World Loader"
+      value: World Loader
     - key: world.loader.subtitle
-      value: "Load and test world files in play mode"
+      value: Load and test world files in play mode
     - key: world.loader.search_label
-      value: "Search"
+      value: Search
     - key: world.loader.search_placeholder
-      value: "Filter worlds..."
+      value: Filter worlds...
     - key: world.loader.refresh
-      value: "Refresh"
+      value: Refresh
     - key: world.loader.auto_play
-      value: "Auto Play Mode"
+      value: Auto Play Mode
     - key: world.loader.unload_scenes
-      value: "Unload Current Scenes"
+      value: Unload Current Scenes
     - key: world.loader.available_worlds
-      value: "Available Worlds"
+      value: Available Worlds
     - key: world.loader.found_worlds
-      value: "Found world files (.noxw) in the project"
+      value: Found world files (.noxw) in the project
     - key: world.loader.advanced_options
-      value: "Advanced Options"
+      value: Advanced Options
     - key: world.loader.advanced_subtitle
-      value: "Additional loading and testing options"
+      value: Additional loading and testing options
     - key: world.loader.clear_cache
-      value: "Clear Cache"
+      value: Clear Cache
     - key: world.loader.open_builds
-      value: "Open Builds Folder"
+      value: Open Builds Folder
     - key: world.loader.build_settings
-      value: "Build Settings"
+      value: Build Settings
     - key: world.loader.load
-      value: "Load"
+      value: Load
     - key: world.loader.load_play
-      value: "Load & Play"
+      value: Load & Play
     - key: world.loader.no_results
-      value: "No world files found matching the filter."
+      value: No world files found matching the filter.
     - key: world.title
-      value: "{0}"
+      value: '{0}'
     - key: world.identifier
-      value: "{0}"
+      value: '{0}'
     - key: world.builder.error_already_building
-      value: "A build is already in progress."
+      value: A build is already in progress.
     - key: world.builder.error_editor_compiling
-      value: "Unity is currently compiling scripts. Please wait until compilation is complete."
+      value: Unity is currently compiling scripts. Please wait until compilation
+        is complete.
     - key: world.builder.error_editor_playing
-      value: "Unity is currently in play mode. Please stop playing before building."
+      value: Unity is currently in play mode. Please stop playing before building.
     - key: world.builder.error_invalid_target
-      value: "Invalid build target specified."
+      value: Invalid build target specified.
     - key: world.builder.error_invalid_scene
-      value: "The scene is not valid for building."
+      value: The scene is not valid for building.
     - key: world.builder.error_unknown
-      value: "An unknown error occurred during the build process."
+      value: An unknown error occurred during the build process.
     - key: world.instances.title
-      value: "Instances"
+      value: Instances
     - key: world.no_instances
-      value: "No instances found."
+      value: No instances found.
     - key: world.about.title
-      value: "About {0}"
+      value: About {0}
     - key: world.instance.label
-      value: "#{0}"
+      value: '#{0}'
     - key: world.instance.text
-      value: "{0}"
+      value: '{0}'
     - key: world.description
-      value: "{0}"
+      value: '{0}'
     - key: world.about.description
-      value: "Description"
+      value: Description
     - key: world.about.actions
-      value: "Actions"
+      value: Actions
     - key: world.favorite.none
-      value: "Add to Favorites"
+      value: Add to Favorites
     - key: world.favorite.add
-      value: "Add to Favorites"
+      value: Add to Favorites
     - key: world.favorite.remove
-      value: "Remove from Fav."
+      value: Remove from Fav.
     - key: world.favorite.star
-      value: "Remove from Fav."
-    - key: world.cache.none 
-      value: "Pre-Download"
+      value: Remove from Fav.
+    - key: world.cache.none
+      value: Pre-Download
     - key: world.cache.add
-      value: "Pre-Download"
+      value: Pre-Download
     - key: world.cache.downloading
-      value: "Downloading"
+      value: Downloading
     - key: world.cache.cancel
-      value: "Cancel Dl."
+      value: Cancel Dl.
     - key: world.cache.downloaded
-      value: "Downloaded"
+      value: Downloaded
     - key: world.cache.remove
-      value: "Remove Dl."
+      value: Remove Dl.
     - key: world.offline.join
-      value: "Join Offline"
+      value: Join Offline
     - key: world.instance.make
-      value: "Make Instance"
+      value: Make Instance
     - key: world.home.star
-      value: "Is Home"
+      value: Is Home
     - key: world.home.none
-      value: "Set as Home"
+      value: Set as Home
     - key: world.home.add
-      value: "Set as Home"
+      value: Set as Home
     - key: world.home.remove
-      value: "Remove Home"
+      value: Remove Home
+    - key: world.editor.notification.user_connected
+      value: "Logged in as {0} ({1})"
+    - key: world.editor.notification.user_not_connected
+      value: "You are not logged in. Please log in to access world building features."
+    - key: world.editor.notification.no_world_descriptor.selected
+      value: "No WorldDescriptor selected. Please select a WorldDescriptor."
+    - key: world.editor.notification.no_world_descriptor.found
+      value: "No WorldDescriptor found. Please add a WorldDescriptor to your scene."
+    - key: world.editor.notification.no_world_descriptor.action.select_first
+      value: "Select"
+    - key: world.editor.notification.no_world_descriptor.action.create_new
+      value: "New"
+    - key: world.editor.notification.no_world_descriptor.action.create
+      value: "Create"
   - IETF: fr-FR
     entries:
     - key: world.search.data.title
-      value: "{0}"
+      value: '{0}'
     - key: world.search.title
-      value: "Mondes"
+      value: Mondes
     - key: world.search.placeholder
-      value: "Rechercher des mondes..."
+      value: Rechercher des mondes...
     - key: world.search.description
-      value: "Recherchez des mondes par titre ou description."
+      value: Recherchez des mondes par titre ou description.
     - key: world.search.worker.title
-      value: "{0}"
+      value: '{0}'
     - key: world.builder.logged_in
-      value: "Vous êtes connecté en tant que {0} ({1})."
+      value: "Vous \xEAtes connect\xE9 en tant que {0} ({1})."
     - key: world.builder.no_descriptor
-      value: "Aucun descripteur de monde trouvé.\nUn descripteur de monde est requis."
+      value: "Aucun descripteur de monde trouv\xE9.\nUn descripteur de monde est
+        requis."
     - key: world.builder.no_build_platform
-      value: "Aucune plateforme de construction sélectionnée.\nUne plateforme de construction est requise."
+      value: "Aucune plateforme de construction s\xE9lectionn\xE9e.\nUne plateforme
+        de construction est requise."
     - key: world.builder.use_active_platform
-      value: "Aucune plateforme de construction sélectionnée.\nLe constructeur utilisera la plateforme active actuelle ({0})."
+      value: "Aucune plateforme de construction s\xE9lectionn\xE9e.\nLe constructeur
+        utilisera la plateforme active actuelle ({0})."
     - key: world.builder.unsupported_platform
-      value: "La plateforme {0} n'est pas supportée.\nVeuillez sélectionner une plateforme supportée."
+      value: "La plateforme {0} n'est pas support\xE9e.\nVeuillez s\xE9lectionner
+        une plateforme support\xE9e."
     - key: world.builder.use_supported
-      value: "Utiliser supporté"
+      value: "Utiliser support\xE9"
     - key: world.builder.multiple_descriptors
-      value: "Plusieurs descripteurs de monde trouvés.\nLe premier sera utilisé.\nUn seul est autorisé."
+      value: "Plusieurs descripteurs de monde trouv\xE9s.\nLe premier sera utilis\xE9.\nUn
+        seul est autoris\xE9."
     - key: world.builder.create
-      value: "Créer"
+      value: "Cr\xE9er"
     - key: world.builder.select
-      value: "Sélectionner"
+      value: "S\xE9lectionner"
     - key: world.builder.remove_other
-      value: "Supprimer les autres"
+      value: Supprimer les autres
     - key: world.builder.no_user
-      value: "Aucun utilisateur trouvé.\nUn utilisateur est requis pour publier un monde."
+      value: "Aucun utilisateur trouv\xE9.\nUn utilisateur est requis pour publier
+        un monde."
     - key: world.builder.login
-      value: "Se connecter"
+      value: Se connecter
     - key: world.builder.no_network_objects
-      value: "Aucun objet réseau trouvé.\nLes objets réseau sont optionnels."
+      value: "Aucun objet r\xE9seau trouv\xE9.\nLes objets r\xE9seau sont optionnels."
     - key: world.builder.network_object_null
-      value: "L'objet connecté à la position {0} est null."
+      value: "L'objet connect\xE9 \xE0 la position {0} est null."
     - key: world.builder.normalize
-      value: "Normaliser"
+      value: Normaliser
     - key: world.builder.network_object_estimate
-      value: "L'id de l'objet connecté {0} sera changé de {1} à {2} à la position {3}.\nCeci peut être dû à un élément dupliqué ou un autre élément utilisant déjà cet id."
+      value: "L'id de l'objet connect\xE9 {0} sera chang\xE9 de {1} \xE0 {2} \xE0
+        la position {3}.\nCeci peut \xEAtre d\xFB \xE0 un \xE9l\xE9ment dupliqu\xE9
+        ou un autre \xE9l\xE9ment utilisant d\xE9j\xE0 cet id."
     - key: world.builder.no_spawns
-      value: "Aucun point d'apparition trouvé.\nLe point d'apparition par défaut est le descripteur de monde."
+      value: "Aucun point d'apparition trouv\xE9.\nLe point d'apparition par d\xE9faut
+        est le descripteur de monde."
     - key: world.builder.spawn_null
-      value: "Le point d'apparition à la position {0} est null."
+      value: "Le point d'apparition \xE0 la position {0} est null."
     - key: world.builder.spawn_estimate
-      value: "L'id du point d'apparition {0} sera changé de {1} à {2} à la position {3}.\nCeci peut être dû à un élément dupliqué ou un autre élément utilisant déjà cet id."
+      value: "L'id du point d'apparition {0} sera chang\xE9 de {1} \xE0 {2} \xE0
+        la position {3}.\nCeci peut \xEAtre d\xFB \xE0 un \xE9l\xE9ment dupliqu\xE9
+        ou un autre \xE9l\xE9ment utilisant d\xE9j\xE0 cet id."
     - key: world.builder.no_scenes
-      value: "Aucune scène additionnelle trouvée.\nLes scènes additionnelles sont optionnelles."
+      value: "Aucune sc\xE8ne additionnelle trouv\xE9e.\nLes sc\xE8nes additionnelles
+        sont optionnelles."
     - key: world.builder.scene_null
-      value: "La scène à la position {0} est null."
+      value: "La sc\xE8ne \xE0 la position {0} est null."
     - key: world.builder.scene_estimate
-      value: "L'id de la scène {0} sera changé de {1} à {2} à la position {3}.\nCeci peut être dû à un élément dupliqué ou un autre élément utilisant déjà cet id."
+      value: "L'id de la sc\xE8ne {0} sera chang\xE9 de {1} \xE0 {2} \xE0 la position
+        {3}.\nCeci peut \xEAtre d\xFB \xE0 un \xE9l\xE9ment dupliqu\xE9 ou un autre
+        \xE9l\xE9ment utilisant d\xE9j\xE0 cet id."
     - key: world.builder.play_mode
-      value: "Le mode lecture est activé.\nLa construction est désactivée en mode lecture."
+      value: "Le mode lecture est activ\xE9.\nLa construction est d\xE9sactiv\xE9e
+        en mode lecture."
     - key: world.builder.exit
-      value: "Sortir"
+      value: Sortir
     - key: world.builder.detect
-      value: "Détecter"
+      value: "D\xE9tecter"
     - key: world.builder.platform_mismatch
-      value: "Désynchronisation de plateforme détectée.\nPlateforme Unity actuelle: {0}\nPlateforme cible du monde: {1}"
+      value: "D\xE9synchronisation de plateforme d\xE9tect\xE9e.\nPlateforme Unity
+        actuelle: {0}\nPlateforme cible du monde: {1}"
     - key: world.builder.use_current
-      value: "Utiliser Actuelle"
+      value: Utiliser Actuelle
     - key: world.builder.switch_platform
-      value: "Changer Plateforme"
+      value: Changer Plateforme
     - key: world.builder.error_no_descriptor
-      value: "Aucun descripteur de monde trouvé."
+      value: "Aucun descripteur de monde trouv\xE9."
     - key: world.builder.error_unsupported_target
-      value: "Cible de construction non supportée."
+      value: "Cible de construction non support\xE9e."
     - key: world.builder.error_no_output_folder
-      value: "Aucun dossier de sortie spécifié."
+      value: "Aucun dossier de sortie sp\xE9cifi\xE9."
     - key: world.builder.error_platform_not_supported
-      value: "{0} n'est pas supporté."
+      value: "{0} n'est pas support\xE9."
     - key: world.builder.success_build
-      value: "Construction réussie."
+      value: "Construction r\xE9ussie."
     - key: world.builder.ok
-      value: "Ok"
+      value: Ok
     - key: world.builder.success
-      value: "Succès"
+      value: "Succ\xE8s"
     - key: world.builder.error
-      value: "Erreur"
+      value: Erreur
     - key: world.builder.title
-      value: "Constructeur de monde"
+      value: Constructeur de monde
     - key: world.loader.title
-      value: "Chargeur de monde"
+      value: Chargeur de monde
     - key: world.loader.subtitle
-      value: "Charger et tester les fichiers de monde en mode lecture"
+      value: Charger et tester les fichiers de monde en mode lecture
     - key: world.loader.search_label
-      value: "Rechercher"
+      value: Rechercher
     - key: world.loader.search_placeholder
-      value: "Filtrer les mondes..."
+      value: Filtrer les mondes...
     - key: world.loader.refresh
-      value: "Actualiser"
+      value: Actualiser
     - key: world.loader.auto_play
-      value: "Mode Lecture Auto"
+      value: Mode Lecture Auto
     - key: world.loader.unload_scenes
-      value: "Décharger les Scènes Actuelles"
+      value: "D\xE9charger les Sc\xE8nes Actuelles"
     - key: world.loader.available_worlds
-      value: "Mondes Disponibles"
+      value: Mondes Disponibles
     - key: world.loader.found_worlds
-      value: "Fichiers de monde (.noxw) trouvés dans le projet"
+      value: "Fichiers de monde (.noxw) trouv\xE9s dans le projet"
     - key: world.loader.advanced_options
-      value: "Options Avancées"
+      value: "Options Avanc\xE9es"
     - key: world.loader.advanced_subtitle
-      value: "Options supplémentaires de chargement et de test"
+      value: "Options suppl\xE9mentaires de chargement et de test"
     - key: world.loader.clear_cache
-      value: "Vider le Cache"
+      value: Vider le Cache
     - key: world.loader.open_builds
-      value: "Ouvrir le Dossier de Builds"
+      value: Ouvrir le Dossier de Builds
     - key: world.loader.build_settings
-      value: "Paramètres de Build"
+      value: "Param\xE8tres de Build"
     - key: world.loader.load
-      value: "Charger"
+      value: Charger
     - key: world.loader.load_play
-      value: "Charger & Jouer"
+      value: Charger & Jouer
     - key: world.loader.no_results
-      value: "Aucun fichier de monde trouvé correspondant au filtre."
+      value: "Aucun fichier de monde trouv\xE9 correspondant au filtre."
     - key: world.title
-      value: "{0}"
+      value: '{0}'
     - key: world.identifier
-      value: "{0}"
+      value: '{0}'
     - key: world.builder.error_already_building
-      value: "Une construction est déjà en cours."
+      value: "Une construction est d\xE9j\xE0 en cours."
     - key: world.builder.error_editor_compiling
-      value: "Unity compile actuellement des scripts. Veuillez attendre que la compilation soit terminée."
+      value: "Unity compile actuellement des scripts. Veuillez attendre que la compilation
+        soit termin\xE9e."
     - key: world.builder.error_editor_playing
-      value: "Unity est actuellement en mode lecture. Veuillez arrêter la lecture avant de construire."
+      value: "Unity est actuellement en mode lecture. Veuillez arr\xEAter la lecture
+        avant de construire."
     - key: world.builder.error_invalid_target
-      value: "Cible de construction invalide spécifiée."
+      value: "Cible de construction invalide sp\xE9cifi\xE9e."
     - key: world.builder.error_invalid_scene
-      value: "La scène n'est pas valide pour la construction."
+      value: "La sc\xE8ne n'est pas valide pour la construction."
     - key: world.builder.error_unknown
-      value: "Une erreur inconnue s'est produite pendant le processus de construction."
-
+      value: Une erreur inconnue s'est produite pendant le processus de construction.
+    - key: world.editor.notification.user_connected
+      value: "Connect\xE9 en tant que {0} ({1})"
+    - key: world.editor.notification.user_not_connected
+      value: "Vous n'\xEAtes pas connect\xE9. Veuillez vous connecter pour acc\xE9der aux fonctionnalit\xE9s de construction de monde."
+    - key: world.editor.notification.no_world_descriptor.selected
+      value: "Aucun WorldDescriptor s\xE9lectionn\xE9. Veuillez s\xE9lectionner un WorldDescriptor."
+    - key: world.editor.notification.no_world_descriptor.found
+      value: "Aucun WorldDescriptor trouv\xE9. Veuillez en ajouter un \xE0 votre sc\xE8ne."
+    - key: world.editor.notification.no_world_descriptor.action.select_first
+      value: "S\xE9lectionner"
+    - key: world.editor.notification.no_world_descriptor.action.create_new
+      value: "Nouveau"
+    - key: world.editor.notification.no_world_descriptor.action.create
+      value: "Cr\xE9er"
