@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Worlds.Pipeline;
 using Nox.CCK.Worlds;
@@ -79,6 +80,19 @@ namespace Nox.Worlds.Runtime.Editor {
 		public string GetTitle()
 			=> "World Builder";
 
+		public IToolOption[] GetOptions() => new IToolOption[] {
+			new DefaultToolOption("Publisher", GoToPublisher),
+		};
+
+		private void GoToPublisher() {
+			var panel = _panel.API.ModAPI.GetMod("nox.worlds")
+				?.GetInstances<IPanel>()
+				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "world", "publisher" }));
+			if (panel == null) return;
+			_window.SetActive(panel);
+			_window.Repaint();
+		}
+
 		public void OnDestroy() {
 			WorldDescriptorHelper.OnWorldSelected.RemoveListener(OnWorldSelected);
 			WorldNotificationHelper.OnNotificationsChanged.RemoveListener(OnNotificationsChanged);
@@ -99,6 +113,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			=> WorldDescriptorHelper.SetCurrentWorld(evt.newValue);
 
 		private void OnNotificationsChanged(WorldNotification[] arg0) {
+			if (_buildButton == null || _notificationsList == null) return;
 			var world = WorldDescriptorHelper.CurrentWorld;
 			_buildButton.SetEnabled(world && WorldNotificationHelper.Allowed);
 			_notificationsList.Clear();
@@ -106,7 +121,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			foreach (var notification in arg0) {
 				var element = prefab.CloneTree();
 
-				element.AddToClassList(notification.Type.ToString().ToLowerInvariant());
+				element.AddToClassList("notification-" + notification.Type.ToString().ToLowerInvariant());
 				var content = element.Q<VisualElement>("content");
 
 				content.Clear();

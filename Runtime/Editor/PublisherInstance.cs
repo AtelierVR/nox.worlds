@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Worlds;
 using Nox.CCK.Utils;
@@ -85,6 +86,19 @@ namespace Nox.Worlds.Runtime.Editor {
 
 		public string GetTitle()
 			=> "World Publisher";
+
+		public IToolOption[] GetOptions() => new IToolOption[] {
+			new DefaultToolOption("Builder", GoToBuilder),
+		};
+
+		private void GoToBuilder() {
+			var panel = _panel.API.ModAPI.GetMod("nox.worlds")
+				?.GetInstances<IPanel>()
+				.FirstOrDefault(p => p.GetPath().SequenceEqual(new[] { "world", "builder" }));
+			if (panel == null) return;
+			_window.SetActive(panel);
+			_window.Repaint();
+		}
 
 		public void OnDestroy() {
 			WorldDescriptorHelper.OnWorldSelected.RemoveListener(OnWorldSelected);
