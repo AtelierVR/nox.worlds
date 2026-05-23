@@ -32,8 +32,10 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 		public int GetPriority()
 			=> 99;
 
-		static internal Identifier GetHome(ICurrentUser current = null)
-			=> (current ?? Main.UserAPI.Current).Home;
+		static internal Identifier GetHome(ICurrentUser current = null) {
+			var user = current ?? Main.UserAPI?.Current;
+			return user != null ? user.Home : Identifier.Invalid;
+		}
 
 		public async UniTask UpdateContent() {
 			var identifier = GetHome();

@@ -44,9 +44,10 @@ namespace Nox.Worlds.Runtime.Clients {
 			return false;
 		}
 
-		internal bool IsHome(ICurrentUser current = null)
-			=> (current ?? Main.UserAPI.Current).Home
-				.Equals(World?.Identifier);
+		internal bool IsHome(ICurrentUser current = null) {
+			var user = current ?? Main.UserAPI?.Current;
+			return user != null && user.Home.Equals(World?.Identifier);
+		}
 
 		static internal IPage OnGotoAction(IMenu menu, object[] context) {
 			if (!T(context, 0, out string type))
