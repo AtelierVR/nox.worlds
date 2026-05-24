@@ -191,11 +191,12 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			var request = new CCK.Instances.SearchRequest {
-				World = world.Identifier
+				World = world.Identifier,
+				Server = server
 			};
 
 
-			var response = await instanceAPI.Search(request, server)
+			var response = await instanceAPI.Search(request)
 				.AttachExternalCancellation(token);
 			if (token.IsCancellationRequested)
 				return Array.Empty<IInstance>();

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Utils;
@@ -28,6 +29,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		public IWorldAsset Asset;
 		public ushort Version = ushort.MaxValue;
 		private bool _isLoading;
+		private CancellationTokenSource _refreshTokenSource;
 
 		private EventSubscription[] _events = Array.Empty<EventSubscription>();
 
@@ -95,12 +97,16 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private async UniTask Refresh(bool load) {
+			_refreshTokenSource?.Cancel();
+			_refreshTokenSource?.Dispose();
+			_refreshTokenSource = new CancellationTokenSource();
+			var token = _refreshTokenSource.Token;
 			if (_isLoading)
 				return;
 			await FetchWorld();
+			if (token.IsCancellationRequested) return;
 			await FetchAsset();
-			if (!load)
-				_component.UpdateInstances(World).Forget();
+			if (token.IsCancellationRequested) return;
 			_component.UpdateContent(World, Asset);
 			UpdateLayout.UpdateImmediate(_content);
 		}
