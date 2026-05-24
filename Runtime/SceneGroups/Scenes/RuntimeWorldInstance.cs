@@ -50,8 +50,13 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			return instance.GetId();
 		}
 
-		private InstanceScene GetInstance(int id)
-			=> Instances.FirstOrDefault(x => x.GetId() == id);
+		private InstanceScene GetInstance(int id) {
+			for (var i = 0; i < Instances.Count; i++) {
+				if (Instances[i].GetId() == id)
+					return Instances[i];
+			}
+			return null;
+		}
 
 		public IWorldDescriptor GetDescriptor(int id)
 			=> GetInstance(id)?.Descriptor;
@@ -70,8 +75,12 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			instance.Visible = active;
 		}
 
-		public int[] GetInstanceIds()
-			=> Instances.Select(x => x.GetId()).ToArray();
+		public int[] GetInstanceIds() {
+			var ids = new int[Instances.Count];
+			for (var i = 0; i < Instances.Count; i++)
+				ids[i] = Instances[i].GetId();
+			return ids;
+		}
 
 		public void RemoveInstance(int id) {
 			var instance = GetInstance(id);
