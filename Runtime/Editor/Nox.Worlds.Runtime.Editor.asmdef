@@ -11,7 +11,7 @@
         "Nox.Entities",
         "Nox.Users",
         "Nox.Network",
-        "Nox.Tables",
+        "Nox.Table",
         "Nox.Search",
         "Nox.UI",
         "Nox.Editor.Panel",

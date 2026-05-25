@@ -10,7 +10,7 @@
         "Nox.Search",
         "Nox.Network",
         "Nox.CCK.Network",
-        "Nox.Tables",
+        "Nox.Table",
         "Nox.UI",
         "Nox.Instances",
         "Nox.Sessions"
