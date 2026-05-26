@@ -81,7 +81,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			);
 
 			if (!string.IsNullOrEmpty(world.Description)) {
-				descriptionText.UpdateText("world.description", new[] { world.Description });
+				descriptionText.SetMarkdown(world.Description);
 				descriptionContainer.SetActive(true);
 			} else
 				descriptionContainer.SetActive(false);

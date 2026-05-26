@@ -20,7 +20,8 @@
     "Nox.CCK.Network",
     "Nox.Entities",
     "Nox.CCK.Users",
-    "Nox.CCK.Instances"
+    "Nox.CCK.Instances",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
