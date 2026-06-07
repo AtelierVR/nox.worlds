@@ -53,6 +53,12 @@
       "type": "depends",
       "version": ">=1.0.0",
       "register": "git+https://github.com/AtelierVR/nox.instances.git"
+    },
+    {
+      "id": "com.unity.scriptablebuildpipeline",
+      "type": "depends",
+      "version": ">=2.1.0",
+      "register": "upm+com.unity.scriptablebuildpipeline@2.1.0"
     }
   ],
   "constraints": [
