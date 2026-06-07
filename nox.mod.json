@@ -26,23 +26,33 @@
   "relations": [
     {
       "id": "ui",
-      "version": ">=1.0.0"
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.ui.git"
     },
     {
       "id": "network",
-      "version": ">=1.0.0"
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.network.git"
     },
     {
       "id": "search",
-      "version": ">=1.0.0"
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.search.git"
     },
     {
       "id": "users",
-      "version": ">=1.0.0"
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.users.git"
     },
     {
       "id": "instances",
-      "version": ">=1.0.0"
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.instances.git"
     }
   ],
   "constraints": [
