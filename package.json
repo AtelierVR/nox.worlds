@@ -4,6 +4,7 @@
     "version":  "1.0.0",
     "description":  "World loading, management, and lifecycle API for Nox worlds.",
     "dependencies": {
-        "com.unity.scriptablebuildpipeline": "2.6.1"
+        "com.unity.scriptablebuildpipeline": "2.6.1",
+        "nox.assetbundles": "https://github.com/AtelierVR/nox.assetbundles.git"
     }
 }

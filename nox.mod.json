@@ -55,6 +55,18 @@
       "register": "git+https://github.com/AtelierVR/nox.instances.git"
     },
     {
+      "id": "nox.assetbundles",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.assetbundles.git"
+    },
+    {
+      "id": "nox.worlds.modules",
+      "type": "depends",
+      "version": ">=1.0.0",
+      "register": "git+https://github.com/AtelierVR/nox.worlds.modules.git"
+    },
+    {
       "id": "com.unity.scriptablebuildpipeline",
       "type": "depends",
       "version": ">=2.6.0",
