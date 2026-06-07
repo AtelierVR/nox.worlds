@@ -57,8 +57,8 @@
     {
       "id": "com.unity.scriptablebuildpipeline",
       "type": "depends",
-      "version": ">=2.1.0",
-      "register": "upm+com.unity.scriptablebuildpipeline@2.1.0"
+      "version": ">=2.3.0",
+      "register": "upm+com.unity.scriptablebuildpipeline@2.3.1"
     }
   ],
   "constraints": [
