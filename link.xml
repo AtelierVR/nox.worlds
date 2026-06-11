@@ -4,5 +4,4 @@
 	<assembly fullname="Nox.Worlds" preserve="all" />
 	<assembly fullname="Nox.Worlds.Pipeline" preserve="all" />
 	<assembly fullname="Nox.Worlds.Runtime" preserve="all" />
-	<assembly fullname="Nox.Worlds.Runtime.Editor" preserve="all" />
 </linker>
