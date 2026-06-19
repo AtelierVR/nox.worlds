@@ -1,4 +1,5 @@
 using Nox.CCK.Utils;
+
 namespace Nox.Worlds {
 	/// <summary>
 	/// Represents a virtual world with its properties and metadata.
@@ -57,9 +58,9 @@ namespace Nox.Worlds {
 		public Identifier Identifier { get; }
 
 		/// <summary>
-		/// Is a <see cref="ushort"/> of the <see cref="IWorldAsset.Version"/>.
-		/// It is <see cref="ushort.MaxValue"/> when the world has no assets.
+		/// The release version of the world.
+		/// When <see cref="Release.Value"/> is negative, the world has no assets.
 		/// </summary>
-		public ushort Release { get; }
+		public IRelease Release { get; }
 	}
 }

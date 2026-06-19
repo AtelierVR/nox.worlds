@@ -2,7 +2,6 @@ using System;
 using Newtonsoft.Json;
 using Nox.CCK.Convertors;
 using Nox.CCK.Utils;
-using Nox.CCK.Worlds;
 
 namespace Nox.Worlds.Runtime.Network {
 	[Serializable, JsonObject]
@@ -34,8 +33,11 @@ namespace Nox.Worlds.Runtime.Network {
 		[JsonProperty("contributors"), JsonConverter(typeof(ArrayConverter<StringToIdentifierConverter>))]
 		public Identifier[] Contributors { get; private set; }
 
-		[JsonProperty("release")]
-		public ushort Release { get; private set; }
+		[JsonProperty("release"), JsonConverter(typeof(ReleaseConverter))]
+		public Release Release { get; private set; }
+
+		IRelease IWorld.Release
+			=> Release;
 
 		public Identifier Identifier
 			=> new("w", Id, null, Server);
