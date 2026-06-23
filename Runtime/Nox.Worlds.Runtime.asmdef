@@ -9,6 +9,7 @@
     "Nox.Worlds",
     "Nox.CCK.Worlds",
     "Nox.Search",
+    "Nox.CCK.Search",
     "Nox.UI",
     "Nox.Users",
     "Nox.Sessions",
