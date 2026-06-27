@@ -67,6 +67,11 @@
       "register": "git+https://github.com/AtelierVR/nox.worlds.modules.git"
     },
     {
+      "id": "audio",
+      "type": "recommends",
+      "register": "git+https://github.com/AtelierVR/nox.audio.git"
+    },
+    {
       "id": "com.unity.scriptablebuildpipeline",
       "type": "depends",
       "version": ">=2.6.0",
@@ -81,6 +86,10 @@
     {
       "type": "after",
       "id": "search"
+    },
+    {
+      "type": "after",
+      "id": "audio"
     }
   ],
   "entrypoints": {

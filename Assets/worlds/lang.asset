@@ -253,6 +253,8 @@ MonoBehaviour:
       value: "New"
     - key: world.editor.notification.no_world_descriptor.action.create
       value: "Create"
+    - key: settings.entry.audio.channel.world
+      value: "Monde"
   - IETF: fr-FR
     entries:
     - key: world.search.data.title
@@ -421,3 +423,5 @@ MonoBehaviour:
       value: "Nouveau"
     - key: world.editor.notification.no_world_descriptor.action.create
       value: "Cr\xE9er"
+    - key: settings.entry.audio.channel.world
+      value: "World"
