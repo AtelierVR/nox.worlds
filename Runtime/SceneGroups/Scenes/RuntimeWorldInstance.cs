@@ -32,10 +32,10 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			var container = await Prefab.InstantiateAsync();
 			SceneManager.MoveGameObjectToScene(container, Scene);
 
-			var instance = new InstanceScene {
-				Container  = container,
-				Descriptor = container.GetComponentInChildren<IWorldDescriptor>(false)
-			};
+			var instance = new InstanceScene(
+				container,
+				container.GetComponentInChildren<IWorldDescriptor>(false)
+			);
 
 			container.name = $"{GetType().Name}_{instance.GetId()}]";
 
@@ -90,7 +90,8 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			}
 
 			Instances.Remove(instance);
-			Object.Destroy(instance.Container);
+			instance.Dispose();
+			instance.Container.Destroy();
 		}
 
 		public bool IsVisibleInstance(int id)

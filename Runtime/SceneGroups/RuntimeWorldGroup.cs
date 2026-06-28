@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Nox.CCK.Utils;
 using UnityEngine.SceneManagement;
 using Nox.Worlds.Runtime.SceneGroups.Scenes;
+using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.SceneGroups {
 	public abstract class RuntimeWorldGroup : IRuntimeWorld, INoxObject {
