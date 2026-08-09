@@ -9,7 +9,7 @@ namespace Nox.Worlds.Runtime.Network {
 	[Serializable]
 	public class Release : IRelease {
 		/// <summary>
-		/// The release version number. -1 means none available.
+		/// The release version number. <see cref="ushort.MaxValue"/> means none available.
 		/// </summary>
 		[JsonProperty("value")]
 		public ushort Value { get; private set; }
