@@ -31,7 +31,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		try {
 			// Vérifier si CurrentWorld est null, Missing ou valide et actif
 			if (CurrentWorld && CurrentWorld && CurrentWorld.gameObject.activeInHierarchy) return;
-			var activeWorlds = Object.FindObjectsByType<WorldDescriptor>(FindObjectsSortMode.None)
+			var activeWorlds = Object.FindObjectsByType<WorldDescriptor>(FindObjectsInactive.Include)
 				.Where(world => world.gameObject.activeInHierarchy)
 				.ToArray();
 			SetCurrentWorld(activeWorlds.Length > 0 ? activeWorlds[0] : null);
