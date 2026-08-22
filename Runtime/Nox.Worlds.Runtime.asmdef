@@ -23,6 +23,7 @@
     "Nox.CCK.Users",
     "Nox.CCK.Instances",
     "Nox.Audio",
+    "Nox.CCK.Audio",
     "Nox.Settings",
     "Nox.CCK.Settings",
     "Unity.TextMeshPro"

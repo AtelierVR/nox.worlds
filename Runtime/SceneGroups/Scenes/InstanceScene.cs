@@ -32,6 +32,10 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 		private void OnVerify(GameObject instance) {
 			foreach (var listener in instance.GetComponentsInChildren<AudioListener>(true))
 				listener.Destroy();
+
+			// Apply the world volume channel to any AudioSource in / under this instance.
+			foreach (var source in instance.GetComponentsInChildren<AudioSource>(true)) 
+				source.outputAudioMixerGroup = Main.WorldRegister.MixerGroup;
 		}
 
 		public void Dispose()

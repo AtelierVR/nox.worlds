@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Audio;
+using Nox.CCK.Audio;
 using Nox.CCK.Language;
 using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Events;
@@ -61,13 +62,19 @@ namespace Nox.Worlds.Runtime {
 				.GetMod("session")
 				?.GetInstance<ISessionAPI>();
 
-	private EventSubscription[] _events;
-
-	static internal IAudioAPI AudioAPI
-		=> Instance.CoreAPI.ModAPI
-			.GetMod("audio")
-			?.GetInstance<IAudioAPI>();
-
+		private EventSubscription[] _events;
+	
+		static internal IAudioAPI AudioAPI
+			=> Instance.CoreAPI.ModAPI
+				.GetMod("audio")
+				?.GetInstance<IAudioAPI>();
+	
+		/// <summary>
+		/// World volume channel. Routes and controls the volume of all worlds' audio
+		/// via the "world" channel (depends on "general").
+		/// </summary>
+		static internal ChannelRegister WorldRegister;
+	
 
 		public void OnInitializeMain(IMainModCoreAPI api) {
 			Instance = this;
@@ -84,8 +91,8 @@ namespace Nox.Worlds.Runtime {
 			Cache   = new CacheManager();
 			_search = new Search.Search();
 
-			// Register world volume channel (depends on "general")
-			var worldAudio = AudioAPI?.Register("world", new[] { "general" });
+			// Register world volume channel (depends on "general"), protected from removal
+			WorldRegister = new ChannelRegister("world", new[] { "general" }, api);
 
 			_events = new EventSubscription[] {
 				api.EventAPI.Subscribe("user_logout", OnUserLogout),
@@ -120,7 +127,8 @@ namespace Nox.Worlds.Runtime {
 			_events = Array.Empty<EventSubscription>();
 
 			// Unregister world volume channel
-			AudioAPI?.UnRegister("world");
+			WorldRegister?.Dispose();
+			WorldRegister = null;
 
 			if (Manager != null)
 				await Manager.Dispose();
