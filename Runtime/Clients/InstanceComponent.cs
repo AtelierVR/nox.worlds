@@ -1,6 +1,5 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using Nox.CCK.Language;
+using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using Nox.Instances;
 using UnityEngine;
@@ -27,7 +26,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		public  TextLanguage            text;
 		public  Button                  button;
 		public  Image                   image;
-		private CancellationTokenSource _thumbnailTokenSource;
+		private NetworkImage            _thumbnailNetworkImage;
 		private IInstance               _instance;
 
 		public void UpdateContent(IInstance instance) {
@@ -44,7 +43,7 @@ namespace Nox.Worlds.Runtime.Clients {
 					?? instance.Identifier.ToString()
 				}
 			);
-			UpdateThumbnail(instance).Forget();
+			UpdateThumbnail(instance);
 		}
 
 		private void OnClick() {
@@ -59,25 +58,16 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 
-		private async UniTask UpdateThumbnail(IInstance instance) {
-			if (_thumbnailTokenSource != null) {
-				_thumbnailTokenSource?.Cancel();
-				_thumbnailTokenSource?.Dispose();
-			}
-
-			_thumbnailTokenSource = new CancellationTokenSource();
+		private void UpdateThumbnail(IInstance instance) {
 			var url = instance?.Thumbnail ?? reference.Page.World.Thumbnail;
 
-			if (!string.IsNullOrEmpty(url)) {
-				var texture = await Main.NetworkAPI
-					.FetchTexture(url)
-					.AttachExternalCancellation(_thumbnailTokenSource.Token);
-				image.sprite = texture
-					? Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero)
-					: null;
-			} else image.sprite = null;
+			if (string.IsNullOrEmpty(url)) {
+				image.sprite = null;
+				return;
+			}
 
-			_thumbnailTokenSource = null;
+			_thumbnailNetworkImage = image.GetOrAddComponent<NetworkImage>();
+			_thumbnailNetworkImage.Url = url;
 		}
 	}
 }

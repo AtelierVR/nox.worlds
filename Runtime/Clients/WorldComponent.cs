@@ -5,6 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Nox.CCK.Language;
+using Nox.CCK.Network;
 using Nox.CCK.Search;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
@@ -26,7 +27,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		public Image labelIcon;
 		public RectTransform content;
 		public WorldPage Page;
-		private CancellationTokenSource _thumbnailTokenSource;
+		private NetworkImage _thumbnailNetworkImage;
 		private CancellationTokenSource _instanceTokenSource;
 		public RectTransform instanceList;
 		public GameObject instanceInfobox;
@@ -88,7 +89,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				descriptionContainer.SetActive(false);
 
 
-			UpdateThumbnail(world).Forget();
+			UpdateThumbnail(world);
 			UpdateInstances(world).Forget();
 
 			UpdateAssetAvailability(asset != null);
@@ -97,33 +98,18 @@ namespace Nox.Worlds.Runtime.Clients {
 			HoverHome(_isHomeHover);
 		}
 
-		private async UniTask UpdateThumbnail(IWorld world) {
-			if (_thumbnailTokenSource != null) {
-				_thumbnailTokenSource?.Cancel();
-				_thumbnailTokenSource?.Dispose();
-			}
-
-			_thumbnailTokenSource = new CancellationTokenSource();
-			if (!string.IsNullOrEmpty(world?.Thumbnail)) {
-				var texture = await Main.NetworkAPI
-					.FetchTexture(world.Thumbnail)
-					.AttachExternalCancellation(_thumbnailTokenSource.Token);
-				if (texture) {
-					thumbnail.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.zero);
-					withThumbnail.SetActive(true);
-					withoutThumbnail.SetActive(false);
-				} else {
-					thumbnail.sprite = null;
-					withThumbnail.SetActive(false);
-					withoutThumbnail.SetActive(true);
-				}
-			} else {
+		private void UpdateThumbnail(IWorld world) {
+			if (string.IsNullOrEmpty(world?.Thumbnail)) {
 				thumbnail.sprite = null;
 				withThumbnail.SetActive(false);
 				withoutThumbnail.SetActive(true);
+				return;
 			}
 
-			_thumbnailTokenSource = null;
+			_thumbnailNetworkImage = thumbnail.GetOrAddComponent<NetworkImage>();
+			_thumbnailNetworkImage.Url = world.Thumbnail;
+			withThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
 		}
 
 		internal async UniTask UpdateInstances(IWorld world) {
