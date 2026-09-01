@@ -20,7 +20,6 @@
     "Nox.Worlds.Scenes",
     "Nox.CCK.Network",
     "Nox.Entities",
-    "Nox.CCK.Users",
     "Nox.CCK.Instances",
     "Nox.Audio",
     "Nox.CCK.Audio",
