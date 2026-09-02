@@ -6,7 +6,7 @@
     "worlds"
   ],
   "name": "Worlds",
-  "version": "1.0.0",
+  "version": "1.0.x",
   "description": "Provides the World API for the game.",
   "license": "GPL-3.0",
   "icon": null,
