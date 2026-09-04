@@ -113,6 +113,8 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 				// Rapporter la progression (80% à 100% pour les modules)
 				var moduleProgress = 0.8f + 0.2f * (i + 1) / moduleArray.Length;
 				progress?.Invoke(moduleProgress);
+
+				await UniTask.Yield(cancellationToken: token);
 			}
 
 			var scenes = descriptor.GetModules<IScenesModule>().FirstOrDefault();

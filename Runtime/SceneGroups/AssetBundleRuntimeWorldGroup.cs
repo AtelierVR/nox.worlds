@@ -72,6 +72,15 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 
 			progress?.Invoke(0.3f);
 
+			try {
+				var collections = bundle.LoadAllAssets<ShaderVariantCollection>();
+				foreach (var collection in collections)
+					if (collection && !collection.isWarmedUp)
+						collection.WarmUp();
+			} catch (Exception ex) {
+				Logger.LogWarning(new Exception($"Failed to warmup world shader variant collections", ex), tag: nameof(AssetBundleRuntimeWorldGroup));
+			}
+
 			var scenes = bundle.GetAllScenePaths();
 			if (scenes.Length == 0 || string.IsNullOrEmpty(scenes[0])) {
 				Logger.LogError($"No scenes found in AssetBundle: {path}", tag: nameof(AssetBundleRuntimeWorldGroup));
