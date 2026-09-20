@@ -29,7 +29,7 @@ namespace Nox.CCK.Worlds {
 		}
 		
 		public static AssetSearchRequest From(IAssetSearchRequest data)
-			=> new AssetSearchRequest {
+			=> new() {
 				Offset = data.Offset,
 				Limit = data.Limit,
 				ShowEmpty = data.ShowEmpty,

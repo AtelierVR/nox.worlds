@@ -35,6 +35,7 @@ namespace Nox.Worlds.Runtime.Network {
 
 			return obj;
 		}
+		
 		public static UpdateWorldRequest From(IUpdateWorldRequest form)
 			=> new UpdateWorldRequest {
 				Title = form.Title,
