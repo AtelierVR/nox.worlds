@@ -12,6 +12,7 @@
     "Nox.CCK.Search",
     "Nox.UI",
     "Nox.Users",
+    "Nox.CCK.Users",
     "Nox.Sessions",
     "Nox.Instances",
     "Nox.Worlds.Pipeline",

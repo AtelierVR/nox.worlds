@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
 using Nox.CCK.Search;
+using Nox.CCK.Users;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
 using Nox.Instances;
@@ -389,10 +390,9 @@ namespace Nox.Worlds.Runtime.Clients {
 			var id = Page.World.Identifier;
 
 			await Main.UserAPI
-				.UpdateCurrent(
-					Main.UserAPI.MakeUpdateCurrentRequest()
-						.SetHome(hasHome ? null : id.ToString())
-				);
+				.UpdateCurrent(new UpdateCurrentRequest {
+					Home = hasHome ? null : id.ToString()
+				});
 
 			_isHome = Page.IsHome();
 			HoverHome(_isHomeHover);
