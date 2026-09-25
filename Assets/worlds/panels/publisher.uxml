@@ -98,7 +98,7 @@
         </ui:ScrollView>
     </ui:VisualElement>
     <ui:GroupBox class="m-0 border-t pb-16 p-8" style="flex-direction: row;">
-        <ui:EnumField value="None" type="Nox.CCK.Utils.Platform, Nox.CCK" name="platform" class="large" style="flex-grow: 1;" />
+        <ui:DropdownField name="platform" class="large" style="flex-grow: 1;" />
         <ui:Button text="Publish" name="publish" class="large" style="min-width: 134px;" />
     </ui:GroupBox>
     <ui:GroupBox name="building" class="m-0 p-0 bg-modal" style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: none;">

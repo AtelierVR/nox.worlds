@@ -157,7 +157,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				return;
 			}
 
-			var target = descriptor.target;
+			var target = descriptor.Target;
 			if (target == Platform.None)
 				target = PlatformExtensions.CurrentPlatform;
 
@@ -414,7 +414,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			if (!descriptor)
 				return;
 
-			var target = descriptor.target;
+			var target = descriptor.Target;
 			if (target == Platform.None)
 				target = PlatformExtensions.CurrentPlatform;
 

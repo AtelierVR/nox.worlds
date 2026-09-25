@@ -21,7 +21,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		// UI Elements - Main
 		private VisualElement _content;
 		private ObjectField _selectedField;
-		private EnumField _platformEnum;
+		private DropdownField _platformEnum;
 
 		// UI Elements - Attach Section
 		private VisualElement _attachContainer;
@@ -130,7 +130,8 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void CacheUIElements(VisualElement root) {
 			// Main
 			_selectedField = root.Q<ObjectField>("selected");
-			_platformEnum = root.Q<EnumField>("platform");
+			_platformEnum = root.Q<DropdownField>("platform");
+			_platformEnum.choices = PlatformExtensions.All.Select(p => p.Display).ToList();
 			_publishButton = root.Q<Button>("publish");
 
 			// Attach section
@@ -183,7 +184,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 		private void SetupEventHandlers() {
 			_selectedField?.RegisterCallback<ChangeEvent<WorldDescriptor>>(OnValueChanged);
-			_platformEnum?.RegisterCallback<ChangeEvent<Enum>>(OnPlatformChanged);
+			_platformEnum?.RegisterCallback<ChangeEvent<string>>(OnPlatformChanged);
 			_publishButton?.RegisterCallback<ClickEvent>(evt => OnPublishAsync().Forget());
 			_attachButton?.RegisterCallback<ClickEvent>(evt => OnAttachAsync().Forget());
 			_infoUpdateButton?.RegisterCallback<ClickEvent>(evt => OnUpdateInfoAsync().Forget());
@@ -210,7 +211,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void OnWorldSelected(WorldDescriptor descriptor) {
 			_selectedField?.SetValueWithoutNotify(descriptor);
 			_publishButton?.SetEnabled(descriptor && WorldNotificationHelper.Allowed && _world != null);
-			_platformEnum?.SetValueWithoutNotify(!descriptor ? Platform.None : descriptor.target);
+			_platformEnum?.SetValueWithoutNotify(!descriptor ? Platform.None.Display : descriptor.Target.Display);
 			_platformEnum?.SetEnabled(descriptor);
 			_assetVersionField?.SetValueWithoutNotify(descriptor?.publishVersion ?? 0);
 
@@ -220,10 +221,10 @@ namespace Nox.Worlds.Runtime.Editor {
 		private static void OnValueChanged(ChangeEvent<WorldDescriptor> evt)
 			=> WorldDescriptorHelper.SetCurrentWorld(evt.newValue);
 
-		private void OnPlatformChanged(ChangeEvent<Enum> evt) {
+		private void OnPlatformChanged(ChangeEvent<string> evt) {
 			var world = WorldDescriptorHelper.CurrentWorld;
 			if (!world) return;
-			var platform = (Platform)evt.newValue;
+			var platform = evt.newValue.GetPlatformFromName();
 			if (platform != Platform.None && !platform.IsSupported()) {
 				EditorUtility.DisplayDialog("Error", $"\"{platform}\" is not supported.", "Ok");
 				Logger.LogError($"Platform \"{platform.GetPlatformName()}\" ({platform.GetBuildTarget()}) is not supported.");
@@ -231,7 +232,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				return;
 			}
 
-			world.target = platform;
+			world.Target = platform;
 			EditorUtility.SetDirty(world);
 		}
 

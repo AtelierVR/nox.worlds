@@ -105,7 +105,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void OnWorldSelected(WorldDescriptor arg0) {
 			_selectedField.SetValueWithoutNotify(arg0);
 			_buildButton.SetEnabled(arg0 && WorldNotificationHelper.Allowed);
-			_platformEnum.SetValueWithoutNotify(!arg0 ? Platform.None : arg0.target);
+			_platformEnum.SetValueWithoutNotify(!arg0 ? Platform.None.Display : arg0.Target.Display);
 			_platformEnum.SetEnabled(arg0);
 		}
 
@@ -167,10 +167,10 @@ namespace Nox.Worlds.Runtime.Editor {
 			BuilderPanel.OutputFolder = path;
 		}
 
-		private static void OnPlatformChanged(ChangeEvent<Enum> evt) {
+		private static void OnPlatformChanged(ChangeEvent<string> evt) {
 			var world = WorldDescriptorHelper.CurrentWorld;
 			if (!world) return;
-			world.target = (Platform)evt.newValue;
+			world.Target = evt.newValue.GetPlatformFromName();
 			EditorUtility.SetDirty(world);
 		}
 
@@ -183,7 +183,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			var data = new BuildData {
 				Descriptor = world,
-				Target = world.target,
+				Target = world.Target,
 				OutputPath = BuilderPanel.OutputFolder,
 				ShowDialog = false
 			};
@@ -228,7 +228,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		private Button _openOutputButton;
 		private Button _buildButton;
 		private Button _selectOutputButton;
-		private EnumField _platformEnum;
+		private DropdownField _platformEnum;
 
 		private VisualElement _buildingContainer;
 		private Label _buildingStatusLabel;
@@ -256,7 +256,8 @@ namespace Nox.Worlds.Runtime.Editor {
 			_openOutputButton = root.Q<Button>("open-output");
 			_buildButton = root.Q<Button>("build");
 			_selectOutputButton = root.Q<Button>("select-output");
-			_platformEnum = root.Q<EnumField>("platform");
+			_platformEnum = root.Q<DropdownField>("platform");
+			_platformEnum.choices = PlatformExtensions.All.Select(p => p.Display).ToList();
 
 			_buildingContainer = root.Q<VisualElement>("building");
 			_buildingStatusLabel = _buildingContainer.Q<Label>("status");
@@ -273,7 +274,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			_selectOutputButton.RegisterCallback<ClickEvent>(OnSelectOutputClicked);
 			_buildButton.RegisterCallback<ClickEvent>(OnBuildClicked);
 			_outputField.SetValueWithoutNotify(BuilderPanel.OutputFolder);
-			_platformEnum.RegisterCallback<ChangeEvent<Enum>>(OnPlatformChanged);
+			_platformEnum.RegisterCallback<ChangeEvent<string>>(OnPlatformChanged);
 			_resultOkButton.RegisterCallback<ClickEvent>(OnBuildResultOKClicked);
 
 			_buildingContainer.style.display = DisplayStyle.None;
