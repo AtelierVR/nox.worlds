@@ -5,6 +5,7 @@ using Nox.CCK.Build;
 using Nox.CCK.Utils;
 using Nox.Worlds;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Nox.CCK.Worlds {
 	public class WorldDescriptor : MonoBehaviour, IWorldDescriptor, ICompilable {
@@ -14,7 +15,20 @@ namespace Nox.CCK.Worlds {
 		#region Publisher
 
 		#if UNITY_EDITOR
-		public Platform target;
+		/// <summary>
+		/// Clé (<see cref="Platform.Key"/>) de la plateforme cible, sérialisée. Les scènes/prefabs
+		/// antérieurs, qui stockaient l'ancien <c>enum Platform</c> (<c>target: 1</c>), sont migrés
+		/// à la lecture — voir <see cref="PlatformExtensions.GetPlatformFromName(string)"/>.
+		/// </summary>
+		[FormerlySerializedAs("target")]
+		public string targetPlatform;
+
+		/// <summary>Cible du build. <see cref="Platform.None"/> = plateforme courante (voir <see cref="Compile"/>).</summary>
+		public Platform Target {
+			get => targetPlatform.GetPlatformFromName();
+			set => targetPlatform = value.Key;
+		}
+
 		public uint     publishId;
 		public string   publishServer;
 		public uint     publishVersion;
@@ -32,8 +46,8 @@ namespace Nox.CCK.Worlds {
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		public void Compile() {
-			if (target == Platform.None)
-				target = PlatformExtensions.CurrentPlatform;
+			if (Target == Platform.None)
+				Target = PlatformExtensions.CurrentPlatform;
 			Modules    = FindModules(this);
 			isCompiled = true;
 		}
