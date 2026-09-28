@@ -192,8 +192,8 @@ namespace Nox.Worlds.Runtime {
 
 		#region Networking
 
-		public async UniTask<IWorld> Fetch(Identifier identifier)
-			=> await Network.Fetch(identifier);
+		public async UniTask<IWorld> Fetch(Identifier identifier, CancellationToken token = default)
+			=> await Network.Fetch(identifier, token);
 
 		public async UniTask<ISearchResponse> Search(ISearchRequest data)
 			=> await Network.Search(SearchRequest.From(data));
@@ -207,8 +207,8 @@ namespace Nox.Worlds.Runtime {
 		public async UniTask<bool> Delete(Identifier identifier)
 			=> await Network.Delete(identifier);
 
-		public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data)
-			=> await Network.SearchAssets(identifier, AssetSearchRequest.From(data));
+		public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, CancellationToken token = default)
+			=> await Network.SearchAssets(identifier, AssetSearchRequest.From(data), token);
 
 		public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
 			=> await Network.UploadThumbnail(identifier, texture, onProgress);

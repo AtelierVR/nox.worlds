@@ -60,9 +60,9 @@ namespace Nox.Worlds {
 		/// Fetches a world by its identifier.
 		/// </summary>
 		/// <param name="identifier">Identifier of the world to fetch.</param>
-		/// <param name="from">Where is the world fetched from, if null it will use the current server.</param>
+		/// <param name="token">Cancellation token to cancel the fetch operation.</param>
 		/// <returns></returns>
-		public UniTask<IWorld> Fetch(Identifier identifier);
+		public UniTask<IWorld> Fetch(Identifier identifier, CancellationToken token = default);
 
 		/// <summary>
 		/// Searches for worlds based on the provided search request.
@@ -101,8 +101,9 @@ namespace Nox.Worlds {
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="data"></param>
+		/// <param name="token">Cancellation token to cancel the search operation.</param>
 		/// <returns></returns>
-		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data);
+		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, CancellationToken token = default);
 
 		/// <summary>
 		/// Uploads a thumbnail for a world asset.
