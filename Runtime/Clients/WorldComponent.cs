@@ -3,17 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
 using Nox.CCK.Search;
 using Nox.CCK.Users;
 using Nox.CCK.Utils;
-using Nox.CCK.Worlds;
 using Nox.Network.Assets;
 using Nox.Instances;
 using Nox.CCK.Network.Assets;
+using Nox.Sessions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -97,6 +96,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			UpdateThumbnail(world);
 			UpdateInstances(world).Forget();
 			UpdateFavoriteState().Forget();
+			UpdateOfflineButton();
 
 			UpdateAssetAvailability(asset != null);
 			HoverCache(_isCachedHover);
@@ -333,9 +333,103 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		public Image offlineIcon;
 		public TextLanguage offlineLabel;
+		public Slider offlineProgress;
+
+		private string _lastOfflineIcon     = "ui:icons/distance.png";
+		private float  _lastOfflineProgress = -1f;
+
+		/// <summary>
+		/// Refresh the offline button from the session matching this world: a pending session
+		/// shows its connection progress (and offers to cancel while the state is cancelable),
+		/// otherwise the button offers to join.
+		/// </summary>
+		public void UpdateOfflineButton() {
+			if (Page?.World == null || !Page.World.Identifier.IsValid()) {
+				offlineButton.interactable = false;
+				offlineLabel.UpdateText("world.offline.join");
+				SetOfflineIcon("ui:icons/distance.png");
+				SetOfflineProgress(0f);
+				return;
+			}
+
+			var world   = Page.World.Identifier;
+			var pending = FindOfflineSession(world);
+			if (pending != null) {
+				SetOfflineProgress(pending.State.Progress);
+				if (pending.State.Cancelable) {
+					offlineButton.interactable = true;
+					offlineLabel.UpdateText("world.offline.cancel");
+					SetOfflineIcon("ui:icons/cancel.png");
+				} else {
+					offlineButton.interactable = false;
+					offlineLabel.UpdateText("world.offline.loading");
+					SetOfflineIcon("ui:icons/distance.png");
+				}
+				return;
+			}
+
+			offlineButton.interactable = true;
+			offlineLabel.UpdateText("world.offline.join");
+			SetOfflineIcon("ui:icons/distance.png");
+			SetOfflineProgress(0f);
+		}
+
+		/// <summary>
+		/// Find the session matching the given world that is still in progress
+		/// (not finished yet).
+		/// </summary>
+		private static ISession FindOfflineSession(Identifier world) {
+			foreach (var session in Main.SessionAPI?.GetSessions() ?? Array.Empty<ISession>()) {
+				if (!session.Match(world))
+					continue;
+				// Only a session still initializing shows a progress; ready or errored sessions are done.
+				if (session.State.Status != Status.Pending)
+					continue;
+				return session;
+			}
+
+			return null;
+		}
+
+		private void SetOfflineIcon(string icon) {
+			if (_lastOfflineIcon == icon)
+				return;
+			offlineIcon.sprite = Client.GetAsset<Sprite>(_lastOfflineIcon = icon);
+		}
+
+		/// <summary>
+		/// Updates the offline button progress bar from the session state progress.
+		/// <see cref="IState.Progress"/> is -1 when not applicable, which is shown as 0.
+		/// </summary>
+		private void SetOfflineProgress(float progress) {
+			if (offlineProgress == null)
+				return;
+
+			var value = Mathf.Clamp01(progress < 0f ? 0f : progress);
+			if (Mathf.Approximately(_lastOfflineProgress, value))
+				return;
+
+			_lastOfflineProgress = value;
+			offlineProgress.value = value;
+		}
+
+		/// <summary>
+		/// Called when a session event occurs (<c>session_added</c>, <c>session_removed</c>,
+		/// <c>session_state_changed</c>) to refresh the offline button state and progress.
+		/// </summary>
+		public void OnSessionChanged()
+			=> UpdateOfflineButton();
 
 		private void OnJoinOffline() {
 			var world = Page.World.Identifier;
+
+			// A session is already in progress: cancel it instead of starting another one.
+			var pending = FindOfflineSession(world);
+			if (pending != null) {
+				if (pending.State.Cancelable)
+					CloseOfflineSessionAsync(pending).Forget();
+				return;
+			}
 
 			var meta = world.Query;
 
@@ -354,6 +448,17 @@ namespace Nox.Worlds.Runtime.Clients {
 					{ "set_current", true }
 				}, out _
 			);
+
+			UpdateOfflineButton();
+		}
+
+		private static async UniTask CloseOfflineSessionAsync(ISession session) {
+			if (session == null)
+				return;
+
+			var api = Main.SessionAPI;
+			if (api != null)
+				await api.Close(session.Id);
 		}
 
 		#endregion
@@ -406,7 +511,7 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			await Main.UserAPI
 				.UpdateCurrent(new UpdateCurrentRequest {
-					Home = hasHome ? null : id.ToString()
+					Home = hasHome ? Identifier.Invalid : id
 				});
 
 			_isHome = Page.IsHome();
@@ -482,6 +587,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			component.offlineLabel       = Reference.GetComponent<TextLanguage>("text", offline);
 			component.offlineIcon.sprite = Client.GetAsset<Sprite>("ui:icons/distance.png");
 			component.offlineLabel.UpdateText("world.offline.join");
+			component.offlineProgress    = Reference.GetComponent<Slider>("progress", offline);
 			SetupEvents(
 				offlineEventTrigger,
 				() => component.OnJoinOffline(),

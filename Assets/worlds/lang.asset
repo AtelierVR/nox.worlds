@@ -229,6 +229,10 @@ MonoBehaviour:
       value: Remove Dl.
     - key: world.offline.join
       value: Join Offline
+    - key: world.offline.cancel
+      value: Cancel
+    - key: world.offline.loading
+      value: Loading...
     - key: world.instance.make
       value: Make Instance
     - key: world.home.star

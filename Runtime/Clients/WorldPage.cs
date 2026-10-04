@@ -187,6 +187,9 @@ namespace Nox.Worlds.Runtime.Clients {
 				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_added", OnCacheUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_download", OnCacheUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_removed", OnCacheUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("session_added", OnSessionUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("session_removed", OnSessionUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("session_state_changed", OnSessionUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("user_update", OnUserUpdate),
 			};
 
@@ -195,6 +198,8 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			if (World != null)
 				_component.UpdateInstances(World).Forget();
+
+			_component.UpdateOfflineButton();
 		}
 
 		private void OnUserUpdate(EventData context)
@@ -202,6 +207,9 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		private void OnCacheUpdate(EventData context)
 			=> _component.UpdateDownloading(IsDownloading());
+
+		private void OnSessionUpdate(EventData context)
+			=> _component.OnSessionChanged();
 
 		public void OnDisplay(IPage lastPage) {
 			if (World != null)
