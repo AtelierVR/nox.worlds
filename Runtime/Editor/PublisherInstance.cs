@@ -21,7 +21,8 @@ namespace Nox.Worlds.Runtime.Editor {
 		// UI Elements - Main
 		private VisualElement _content;
 		private ObjectField _selectedField;
-		private DropdownField _platformEnum;
+		private VisualElement _platformEnum;
+		private PlatformPopupField _platformField;
 
 		// UI Elements - Attach Section
 		private VisualElement _attachContainer;
@@ -130,8 +131,9 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void CacheUIElements(VisualElement root) {
 			// Main
 			_selectedField = root.Q<ObjectField>("selected");
-			_platformEnum = root.Q<DropdownField>("platform");
-			_platformEnum.choices = PlatformExtensions.All.Select(p => p.Display).ToList();
+			_platformEnum = root.Q<VisualElement>("platform");
+			_platformField = new PlatformPopupField();
+			_platformEnum.Add(_platformField);
 			_publishButton = root.Q<Button>("publish");
 
 			// Attach section
@@ -184,7 +186,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 		private void SetupEventHandlers() {
 			_selectedField?.RegisterCallback<ChangeEvent<WorldDescriptor>>(OnValueChanged);
-			_platformEnum?.RegisterCallback<ChangeEvent<string>>(OnPlatformChanged);
+			_platformEnum?.RegisterCallback<ChangeEvent<Platform[]>>(OnPlatformChanged);
 			_publishButton?.RegisterCallback<ClickEvent>(evt => OnPublishAsync().Forget());
 			_attachButton?.RegisterCallback<ClickEvent>(evt => OnAttachAsync().Forget());
 			_infoUpdateButton?.RegisterCallback<ClickEvent>(evt => OnUpdateInfoAsync().Forget());
@@ -211,9 +213,16 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void OnWorldSelected(WorldDescriptor descriptor) {
 			_selectedField?.SetValueWithoutNotify(descriptor);
 			_publishButton?.SetEnabled(descriptor && WorldNotificationHelper.Allowed && _world != null);
-			_platformEnum?.SetValueWithoutNotify(!descriptor ? Platform.None.Display : descriptor.Target.Display);
+			_platformField?.SetValueWithoutNotify(!descriptor ? Array.Empty<Platform>() : descriptor.Targets);
 			_platformEnum?.SetEnabled(descriptor);
 			_assetVersionField?.SetValueWithoutNotify(descriptor?.publishVersion ?? 0);
+
+			// Une recharge de scène en cours de build redonne la même scène et le même world : inutile de
+			// refaire un GET et de repasser le panneau en « Loading ».
+			if (_world != null && descriptor
+				&& descriptor.publishId == _world.Id
+				&& descriptor.publishServer == _world.Server)
+				return;
 
 			CheckLoginStatus().Forget();
 		}
@@ -221,18 +230,11 @@ namespace Nox.Worlds.Runtime.Editor {
 		private static void OnValueChanged(ChangeEvent<WorldDescriptor> evt)
 			=> WorldDescriptorHelper.SetCurrentWorld(evt.newValue);
 
-		private void OnPlatformChanged(ChangeEvent<string> evt) {
+		private static void OnPlatformChanged(ChangeEvent<Platform[]> evt) {
 			var world = WorldDescriptorHelper.CurrentWorld;
 			if (!world) return;
-			var platform = evt.newValue.GetPlatformFromName();
-			if (platform != Platform.None && !platform.IsSupported()) {
-				EditorUtility.DisplayDialog("Error", $"\"{platform}\" is not supported.", "Ok");
-				Logger.LogError($"Platform \"{platform.GetPlatformName()}\" ({platform.GetBuildTarget()}) is not supported.");
-				_platformEnum?.SetValueWithoutNotify(evt.previousValue);
-				return;
-			}
 
-			world.Target = platform;
+			world.Targets = evt.newValue;
 			EditorUtility.SetDirty(world);
 		}
 

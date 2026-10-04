@@ -105,8 +105,8 @@ namespace Nox.Worlds.Runtime.Editor {
 		private void OnWorldSelected(WorldDescriptor arg0) {
 			_selectedField.SetValueWithoutNotify(arg0);
 			_buildButton.SetEnabled(arg0 && WorldNotificationHelper.Allowed);
-			_platformEnum.SetValueWithoutNotify(!arg0 ? Platform.None.Display : arg0.Target.Display);
-			_platformEnum.SetEnabled(arg0);
+			_platformField?.SetValueWithoutNotify(!arg0 ? Array.Empty<Platform>() : arg0.Targets);
+			_platformEnum?.SetEnabled(arg0);
 		}
 
 		private static void OnValueChanged(ChangeEvent<WorldDescriptor> evt)
@@ -167,25 +167,29 @@ namespace Nox.Worlds.Runtime.Editor {
 			BuilderPanel.OutputFolder = path;
 		}
 
-		private static void OnPlatformChanged(ChangeEvent<string> evt) {
+		private static void OnPlatformChanged(ChangeEvent<Platform[]> evt) {
 			var world = WorldDescriptorHelper.CurrentWorld;
 			if (!world) return;
-			world.Target = evt.newValue.GetPlatformFromName();
+			world.Targets = evt.newValue;
 			EditorUtility.SetDirty(world);
 		}
 
 		private static void OnBuildClicked(ClickEvent evt) {
+			// La référence peut être obsolète (scène rechargée depuis le dernier build)
+			WorldDescriptorHelper.Rebind();
+
 			var world = WorldDescriptorHelper.CurrentWorld;
 			if (!world) {
 				Debug.LogError("No world selected.");
 				return;
 			}
 
+			// Le Scriptable Build Pipeline refuse de construire tant qu'une scène chargée est modifiée
+			if (!WorldDescriptorHelper.SaveScene(world)) return;
+
 			var data = new BuildData {
 				Descriptor = world,
-				Target = world.Target,
-				OutputPath = BuilderPanel.OutputFolder,
-				ShowDialog = false
+				OutputPath = BuilderPanel.OutputFolder
 			};
 
 			Builder.Build(data).Forget();
@@ -202,12 +206,15 @@ namespace Nox.Worlds.Runtime.Editor {
 			=> OnBuildStarted();
 
 		private void OnBuildFinished(BuildResult arg0) {
+			// Le build a pu recharger les scènes : on repart du descriptor réellement vivant
+			WorldDescriptorHelper.Rebind();
+
 			_buildingContainer.style.display = DisplayStyle.None;
 			_resultContainer.style.display = DisplayStyle.Flex;
 			_resultFailedLabel.style.display = arg0.IsFailed ? DisplayStyle.Flex : DisplayStyle.None;
 			_resultSuccessLabel.style.display = arg0.IsFailed ? DisplayStyle.None : DisplayStyle.Flex;
 			_resultDetailsLabel.text = !arg0.IsFailed
-				? LanguageManager.Get("world.builder.result.success", new object[] { arg0.Output })
+				? LanguageManager.Get("world.builder.result.success", new object[] { string.Join("\n", arg0.Outputs.Select(output => output.ToString())) })
 				: arg0.Message;
 		}
 
@@ -228,7 +235,8 @@ namespace Nox.Worlds.Runtime.Editor {
 		private Button _openOutputButton;
 		private Button _buildButton;
 		private Button _selectOutputButton;
-		private DropdownField _platformEnum;
+		private VisualElement _platformEnum;
+		private PlatformPopupField _platformField;
 
 		private VisualElement _buildingContainer;
 		private Label _buildingStatusLabel;
@@ -256,8 +264,9 @@ namespace Nox.Worlds.Runtime.Editor {
 			_openOutputButton = root.Q<Button>("open-output");
 			_buildButton = root.Q<Button>("build");
 			_selectOutputButton = root.Q<Button>("select-output");
-			_platformEnum = root.Q<DropdownField>("platform");
-			_platformEnum.choices = PlatformExtensions.All.Select(p => p.Display).ToList();
+			_platformEnum = root.Q<VisualElement>("platform");
+			_platformField = new PlatformPopupField();
+			_platformEnum.Add(_platformField);
 
 			_buildingContainer = root.Q<VisualElement>("building");
 			_buildingStatusLabel = _buildingContainer.Q<Label>("status");
@@ -274,7 +283,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			_selectOutputButton.RegisterCallback<ClickEvent>(OnSelectOutputClicked);
 			_buildButton.RegisterCallback<ClickEvent>(OnBuildClicked);
 			_outputField.SetValueWithoutNotify(BuilderPanel.OutputFolder);
-			_platformEnum.RegisterCallback<ChangeEvent<string>>(OnPlatformChanged);
+			_platformEnum.RegisterCallback<ChangeEvent<Platform[]>>(OnPlatformChanged);
 			_resultOkButton.RegisterCallback<ClickEvent>(OnBuildResultOKClicked);
 
 			_buildingContainer.style.display = DisplayStyle.None;

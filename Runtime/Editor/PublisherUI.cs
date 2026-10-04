@@ -1,5 +1,7 @@
 using System;
 using Cysharp.Threading.Tasks;
+using Nox.CCK.Convertors;
+using Nox.CCK.Network.Assets;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -44,8 +46,8 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			_infoServerField?.SetValueWithoutNotify(_world.Server ?? "");
 			_infoIdField?.SetValueWithoutNotify(_world.Id);
-			_infoNameField?.SetValueWithoutNotify(_world.Title ?? "");
-			_infoDescriptionField?.SetValueWithoutNotify(_world.Description ?? "");
+			_infoNameField?.SetValueWithoutNotify(_world.Title?.Resolve() ?? "");
+			_infoDescriptionField?.SetValueWithoutNotify(_world.Description?.Resolve() ?? "");
 			UpdateThumbnailPreview();
 		}
 
@@ -55,7 +57,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				return;
 			}
 
-			if (_world != null && !string.IsNullOrEmpty(_world.Thumbnail)) {
+			if (_world != null && !string.IsNullOrEmpty(_world.BestImage(1f)?.Url)) {
 				DownloadAndDisplayThumbnail().Forget();
 			}
 			else {
@@ -77,7 +79,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				_thumbnailImage.style.display = DisplayStyle.None;
 				_thumbnailFixButton.style.display = DisplayStyle.None;
 
-				var thumbnailUrl = _world.Thumbnail;
+				var thumbnailUrl = _world.BestImage(1f)?.Url;
 				var texture = await Main.NetworkAPI.FetchTexture(thumbnailUrl);
 
 				if (texture != null) {

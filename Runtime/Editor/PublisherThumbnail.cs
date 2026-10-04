@@ -83,13 +83,13 @@ namespace Nox.Worlds.Runtime.Editor {
 					Logger.OpenDialog(
 						"Error",
 						"Texture cannot be encoded to PNG. This may be due to:\n" +
-						"• Unsupported texture format\n" +
-						"• Compressed texture that can't be read\n" +
-						"• Non-power-of-2 dimensions on some platforms\n\n" +
+						"Ã¢â‚¬Â¢ Unsupported texture format\n" +
+						"Ã¢â‚¬Â¢ Compressed texture that can't be read\n" +
+						"Ã¢â‚¬Â¢ Non-power-of-2 dimensions on some platforms\n\n" +
 						"Try:\n" +
-						"• Setting texture format to 'RGBA32' or 'RGB24'\n" +
-						"• Enabling 'Read/Write Enabled'\n" +
-						"• Using power-of-2 dimensions",
+						"Ã¢â‚¬Â¢ Setting texture format to 'RGBA32' or 'RGB24'\n" +
+						"Ã¢â‚¬Â¢ Enabling 'Read/Write Enabled'\n" +
+						"Ã¢â‚¬Â¢ Using power-of-2 dimensions",
 						"Ok"
 					);
 					return;
@@ -103,7 +103,7 @@ namespace Nox.Worlds.Runtime.Editor {
 				Logger.Log("Uploading thumbnail...");
 				_thumbnailStatus.text = "Uploading thumbnail...";
 
-				var success = await Main.Instance.Network.UploadThumbnail(
+				var success = await Main.Instance.Network.AddImage(
 					_world.Identifier,
 					texture,
 					progress => _thumbnailStatus.text = $"Uploading thumbnail... {progress * 100:F0}%"

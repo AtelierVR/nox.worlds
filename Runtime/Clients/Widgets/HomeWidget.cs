@@ -1,7 +1,9 @@
-﻿using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks;
+using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
 using Nox.CCK.Utils;
+using Nox.CCK.Network.Assets;
 using Nox.UI;
 using Nox.UI.Widgets;
 using Nox.Users;
@@ -56,13 +58,13 @@ namespace Nox.Worlds.Runtime.Clients.Widgets {
 				return;
 			}
 
-			_label.UpdateText("value", new[] { home.Title ?? identifier.ToString() });
+			_label.UpdateText("value", new[] { home.Title?.Resolve() ?? identifier.ToString() });
 
 			await UpdateBanner(home);
 		}
 
 		private async UniTask UpdateBanner(IWorld home) {
-			var url = home.Thumbnail;
+			var url = home.BestImage(16f / 9f)?.Url;   // wide banner
 
 			if (string.IsNullOrEmpty(url)) {
 				_container.SetActive(false);

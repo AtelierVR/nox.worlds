@@ -4,7 +4,9 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Utils;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Worlds;
+using Nox.Network.Assets;
 using Nox.Sessions;
 using Nox.UI;
 using Nox.Users;
@@ -26,7 +28,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		private WorldComponent _component;
 		private Identifier _identifier;
 		public IWorld World;
-		public IWorldAsset Asset;
+		public IAssetFile Asset;
 		public ushort Version = ushort.MaxValue;
 		private bool _isLoading;
 		private CancellationTokenSource _refreshTokenSource;
@@ -62,7 +64,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				case "identifier" when T(context, 1, out Identifier wi0):
 					return OnPageByIdentifier(menu, context, wi0);
 				case "world" when T(context, 1, out IWorld w0):
-					var a0 = T(context, 2, out IWorldAsset asset) ? asset : null;
+					var a0 = T(context, 2, out IAssetFile asset) ? asset : null;
 					return OnPageByWorld(menu, context, w0, a0);
 			}
 
@@ -75,21 +77,21 @@ namespace Nox.Worlds.Runtime.Clients {
 				_context    = context,
 				_identifier = identifier,
 				World       = null,
+				Version     = identifier.GetVersion(),
 				Asset       = null,
-				Version     = identifier.GetVersion()
 			};
 			page.Refresh(true).Forget();
 			return page;
 		}
 
-		private static WorldPage OnPageByWorld(IMenu menu, object[] context, IWorld world, IWorldAsset asset) {
+		private static WorldPage OnPageByWorld(IMenu menu, object[] context, IWorld world, IAssetFile asset) {
 			var page = new WorldPage {
 				MId         = menu.Id,
 				_context    = context,
 				_identifier = world.Identifier,
 				World       = world,
+				Version     = world.Identifier.GetVersion(),
 				Asset       = asset,
-				Version     = world.Identifier.GetVersion()
 			};
 			if (page.Asset == null)
 				page.FetchAsset(true).Forget();
@@ -125,16 +127,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			if (_isLoading)
 				return;
 			_isLoading = true;
-			Asset = (await Main.Instance.Network.SearchAssets(
-					_identifier,
-					new AssetSearchRequest {
-						Limit     = 1,
-						Versions  = new[] { Version },
-						Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
-						Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() }
-					}
-				)).Items
-				.FirstOrDefault();
+			Asset      = await Main.Instance.Network.ResolveBundle(_identifier);
 			_isLoading = false;
 			if (update)
 				_component.UpdateContent(World, Asset);
@@ -146,8 +139,8 @@ namespace Nox.Worlds.Runtime.Clients {
 				return;
 			}
 
-			Main.Instance.RemoveFromCache(Asset.Hash);
-			Logger.Log($"Removed asset from cache: {Asset.Hash}");
+			Main.Instance.RemoveFromCache(Asset.CacheKey());
+			Logger.Log($"Removed asset from cache: {Asset.CacheKey()}");
 		}
 
 		public void CancelDownload()
@@ -170,7 +163,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			var cache = Main.Instance
-				.DownloadToCache(Asset.Url, Asset.Hash);
+				.DownloadToCache(Asset.Url, Asset.CacheKey());
 
 			cache.Start().Forget();
 		}
@@ -226,11 +219,11 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		public bool InCache()
-			=> Asset != null && Main.Instance.Cache.Has(Asset.Hash);
+			=> Asset != null && Main.Instance.Cache.Has(Asset.CacheKey());
 
 		private Cache GetDownload()
 			=> Asset != null
-				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.Hash)
+				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.CacheKey())
 				: null;
 
 		public (bool, float) IsDownloading() {

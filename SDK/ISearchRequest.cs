@@ -16,13 +16,6 @@ namespace Nox.Worlds {
 		public string Query { get; set; }
 
 		/// <summary>
-		/// An array of world IDs to specifically include in the search results.
-		/// If provided, the search will return only the worlds matching these IDs.
-		/// If empty or null, the search will consider all available worlds.
-		/// </summary>
-		public uint[] Identifiers { get; set; }
-
-		/// <summary>
 		/// The offset for pagination.
 		/// This indicates the number of items to skip before starting to collect the result set.
 		/// </summary>

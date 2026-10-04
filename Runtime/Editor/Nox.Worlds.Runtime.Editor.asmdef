@@ -4,6 +4,7 @@
     "references": [
         "Nox.CCK",
         "Nox.CCK.Worlds",
+        "Nox.CCK.Network",
         "Nox.Worlds",
         "Nox.Worlds.Runtime",
         "Nox.Worlds.Pipeline",

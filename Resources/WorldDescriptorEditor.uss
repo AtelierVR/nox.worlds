@@ -27,9 +27,9 @@
     margin: 2px 0;
 }
 
-.readonly-label {
+.modules-empty {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.5);
     -unity-font-style: italic;
-    margin-left: 15px;
+    padding-left: 4px;
 }

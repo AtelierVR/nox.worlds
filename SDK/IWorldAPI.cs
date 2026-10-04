@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Utils;
+using Nox.Network.Assets;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -97,41 +98,22 @@ namespace Nox.Worlds {
 		public UniTask<bool> Delete(Identifier identifier);
 
 		/// <summary>
-		/// Searches for assets associated with a world.
+		/// Resolves the bundle a world is played from: the file of its release that matches the
+		/// current platform and engine, or <c>null</c> when the world has no compatible variant.
 		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="data"></param>
-		/// <param name="token">Cancellation token to cancel the search operation.</param>
+		/// <param name="identifier">Identifier of the world, optionally pinning a version (<c>?v=</c>).</param>
+		/// <param name="token">Cancellation token to cancel the resolution.</param>
 		/// <returns></returns>
-		public UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, CancellationToken token = default);
+		public UniTask<IAssetFile> ResolveBundle(Identifier identifier, CancellationToken token = default);
 
 		/// <summary>
-		/// Uploads a thumbnail for a world asset.
+		/// Adds an image to a world, converting the texture to PNG first.
 		/// </summary>
 		/// <param name="identifier"></param>
 		/// <param name="texture"></param>
 		/// <param name="onProgress"></param>
 		/// <returns></returns>
-		public UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null);
-
-		/// <summary>
-		/// Uploads a file for a world asset.
-		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="assetId"></param>
-		/// <param name="fileName"></param>
-		/// <param name="fileHash"></param>
-		/// <param name="onProgress"></param>
-		/// <returns></returns>
-		public UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string fileName, string fileHash = null, Action<float> onProgress = null);
-
-		/// <summary>
-		/// Creates a new asset for a world.
-		/// </summary>
-		/// <param name="identifier"></param>
-		/// <param name="data"></param>
-		/// <returns></returns>
-		public UniTask<IWorldAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data);
+		public UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null);
 
 		/// <summary>
 		/// Downloads a file for a world asset.

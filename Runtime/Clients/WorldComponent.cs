@@ -4,13 +4,16 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
 using Nox.CCK.Search;
 using Nox.CCK.Users;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
+using Nox.Network.Assets;
 using Nox.Instances;
+using Nox.CCK.Network.Assets;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -69,12 +72,12 @@ namespace Nox.Worlds.Runtime.Clients {
 			UpdateAssetAvailability(false);
 		}
 
-		public void UpdateContent(IWorld world, IWorldAsset asset) {
+		public void UpdateContent(IWorld world, IAssetFile asset) {
 			if (world == null)
 				return;
 
-			title.UpdateText("world.title", new[] { world.Title });
-			label.UpdateText("world.about.title", new[] { world.Title ?? world.Identifier.ToString() });
+			title.UpdateText("world.title", new[] { world.Title?.Resolve() });
+			label.UpdateText("world.about.title", new[] { world.Title?.Resolve() ?? world.Identifier.ToString() });
 			identifier.UpdateText(
 				"world.identifier", new[] {
 					world.Identifier.ToString(),
@@ -83,8 +86,9 @@ namespace Nox.Worlds.Runtime.Clients {
 				}
 			);
 
-			if (!string.IsNullOrEmpty(world.Description)) {
-				descriptionText.SetMarkdown(world.Description);
+			var description = world.Description?.Resolve();
+			if (!string.IsNullOrEmpty(description)) {
+				descriptionText.SetMarkdown(description);
 				descriptionContainer.SetActive(true);
 			} else
 				descriptionContainer.SetActive(false);
@@ -92,6 +96,7 @@ namespace Nox.Worlds.Runtime.Clients {
 
 			UpdateThumbnail(world);
 			UpdateInstances(world).Forget();
+			UpdateFavoriteState().Forget();
 
 			UpdateAssetAvailability(asset != null);
 			HoverCache(_isCachedHover);
@@ -100,7 +105,9 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		private void UpdateThumbnail(IWorld world) {
-			if (string.IsNullOrEmpty(world?.Thumbnail)) {
+			var url = world.BestImage(1f)?.Url;   // square card slot
+
+			if (string.IsNullOrEmpty(url)) {
 				thumbnail.sprite = null;
 				withThumbnail.SetActive(false);
 				withoutThumbnail.SetActive(true);
@@ -108,7 +115,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			_thumbnailNetworkImage = thumbnail.GetOrAddComponent<NetworkImage>();
-			_thumbnailNetworkImage.Url = world.Thumbnail;
+			_thumbnailNetworkImage.Url = url;
 			withThumbnail.SetActive(true);
 			withoutThumbnail.SetActive(false);
 		}
@@ -126,7 +133,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			var isFirst = true;
 			var action = new Action<IInstance[]>(
 				instances => {
-					Logger.LogDebug($"Found {instances.Length} instances for world {world.Title} ({world.Identifier})");
+					Logger.LogDebug($"Found {instances.Length} instances for world {world.Title?.Resolve()} ({world.Identifier})");
 					if (isFirst)
 						foreach (Transform child in instanceList.transform)
 							Destroy(child.gameObject);
@@ -179,7 +186,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			var request = new CCK.Instances.SearchRequest {
-				World = world.Identifier,
+				World  = world.Identifier,
 				Server = server
 			};
 
@@ -208,6 +215,14 @@ namespace Nox.Worlds.Runtime.Clients {
 		public Image favoriteIcon;
 		public Button favoriteButton;
 		public TextLanguage favoriteLabel;
+
+		private async UniTask UpdateFavoriteState() {
+			if (Page?.World == null)
+				return;
+			var key     = await Main.Instance.Network.FindFavoriteGroup(Page.World.Identifier);
+			_isFavorite = key != null;
+			HoverFavorite(_isFavoriteHover);
+		}
 
 		private void HoverFavorite(bool isHover) {
 			_isFavoriteHover    = isHover;

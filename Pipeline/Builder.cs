@@ -9,6 +9,7 @@ using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
 using UnityEditor;
 using UnityEditor.Build.Pipeline;
+using UnityEditor.Build.Pipeline.Tasks;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
@@ -22,10 +23,15 @@ namespace Nox.Worlds.Pipeline {
 	public static class Builder {
 		public static bool IsBuilding;
 
+		/// <summary>
+		/// Racine des dossiers de travail du build. Les scènes qui s'y trouvent sont des copies jetables
+		/// et non des worlds : voir <see cref="WorldCopy"/>.
+		/// </summary>
+		public const string TempRoot = "Assets/Temp/";
+
 		public static readonly UnityEvent<float, string> OnBuildProgress = new();
 		public static readonly UnityEvent<BuildResult> OnBuildFinished = new();
 		public static readonly UnityEvent<BuildData> OnBuildStarted = new();
-
 
 		[MenuItem("Nox/Worlds/Build World")]
 		public static void BuildMenu()
@@ -49,7 +55,6 @@ namespace Nox.Worlds.Pipeline {
 
 			var data = new BuildData {
 				Descriptor = descriptor,
-				ShowDialog = true,
 				OutputPath = path
 			};
 
@@ -72,26 +77,79 @@ namespace Nox.Worlds.Pipeline {
 				Logger.OpenDialog("Build Failed", result.Message, "OK");
 		}
 
-		public static async UniTask<BuildResult> Build(BuildData data) {
-			// Wrap user progress callback to also emit UnityEvent
-			var userProgress = data.ProgressCallback;
-			data.ProgressCallback = (p, m) => {
-				try {
-					OnBuildProgress.Invoke(p, m);
-				} catch {
-					/* ignore listener errors */
-				}
+		/// <summary>
+		/// État interne d'un build. L'appelant ne fournit qu'un <see cref="BuildData"/> : les plateformes,
+		/// l'emplacement temporaire, le nom des bundles et la copie de travail sont décidés ici.
+		/// </summary>
+		private sealed class State {
+			public WorldDescriptor Descriptor;
+			public string          OutputPath;
 
-				try {
-					userProgress?.Invoke(p, m);
-				} catch {
-					/* ignore user callback errors */
+			/// <summary>Plateformes à construire : un AssetBundle par entrée.</summary>
+			public Platform[] Targets = Array.Empty<Platform>();
+
+			/// <summary>
+			/// Nom de la scène d'origine, figé avant toute opération : les références vers ses objets
+			/// peuvent être invalidées en cours de route (rechargement de scène, refresh).
+			/// </summary>
+			public string SceneName;
+
+			public string    Filename;
+			public string    TempPath;
+			public WorldCopy Copy;
+
+			public Action<float, string> ProgressCallback = (_, _) => { };
+		}
+
+		/// <summary>
+		/// Construit le world de <paramref name="request"/> : une copie de travail est créée, compilée,
+		/// puis bundlée une fois par plateforme cible. La scène d'origine n'est jamais modifiée, et rien
+		/// n'est écrit hors de <see cref="BuildData.OutputPath"/> et de <see cref="TempRoot"/>.
+		/// </summary>
+		public static async UniTask<BuildResult> Build(BuildData request) {
+			// Wrap user progress callback to also emit UnityEvent
+			var userProgress = request?.ProgressCallback;
+
+			var state = new State {
+				Descriptor       = request?.Descriptor,
+				OutputPath       = request?.OutputPath,
+				Targets          = NormalizeTargets(request?.Descriptor ? request.Descriptor.Targets : null),
+				SceneName        = request?.Descriptor ? request.Descriptor.gameObject.scene.name : null,
+				TempPath         = $"{TempRoot}{GenerateRandomHash()}/",
+				ProgressCallback = (p, m) => {
+					try {
+						OnBuildProgress.Invoke(p, m);
+					} catch {
+						/* ignore listener errors */
+					}
+
+					try {
+						userProgress?.Invoke(p, m);
+					} catch {
+						/* ignore user callback errors */
+					}
 				}
 			};
 
+			if (!state.Descriptor || !state.Descriptor.gameObject)
+				return Finish(
+					new BuildResult {
+						Type    = BuildResultType.InvalidScenes,
+						Message = "No world descriptor was given to the build."
+					}
+				);
+
+			if (string.IsNullOrEmpty(state.OutputPath))
+				return Finish(
+					new BuildResult {
+						Type    = BuildResultType.Failed,
+						Message = "No output path was given to the build."
+					}
+				);
+
 			// Notify build start
 			try {
-				OnBuildStarted.Invoke(data);
+				OnBuildStarted.Invoke(request);
 			} catch {
 				/* ignore listener errors */
 			}
@@ -108,98 +166,138 @@ namespace Nox.Worlds.Pipeline {
 			}
 
 			try {
-				if (data.Target == Platform.None)
-					data.Target = PlatformExtensions.CurrentPlatform; // Set default filename if not provided
-				if (string.IsNullOrEmpty(data.Filename))
-					data.Filename = GenerateDefaultFilename(data.Descriptor.gameObject.scene.name, data.Target); // Set randomized temp path if not provided
-				if (string.IsNullOrEmpty(data.TempPath))
-					data.TempPath = $"Assets/Temp/{GenerateRandomHash()}/"; // Report progress: Validation
-				data.ProgressCallback?.Invoke(0.05f, "Validating build prerequisites...");
+				state.ProgressCallback?.Invoke(0.05f, "Validating build prerequisites...");
 				await UniTask.Yield();
 
 				// Validation des prérequis
-				var validation = ValidateBuildPrerequisites(data);
+				var validation = ValidateBuildPrerequisites(state);
 				if (validation.Type != BuildResultType.Success)
 					return Finish(validation);
 
 				IsBuilding = true;
 				var rollback = EditorSceneManager.GetSceneManagerSetup();
 
+				// La copie de travail est libérée avant d'annoncer la fin du build : les panels
+				// re-résolvent le world courant et ne doivent jamais tomber sur le descriptor de la copie.
+				// La scène d'origine n'ayant pas été touchée, il n'y a rien à restaurer.
+				BuildResult Fail(BuildResult result) {
+					state.Copy?.Dispose();
+					state.Copy = null;
+					return Finish(result);
+				}
+
 				try {
 					// Report progress: Preparation
-					data.ProgressCallback?.Invoke(0.10f, "Preparing temporary directories...");
+					state.ProgressCallback?.Invoke(0.10f, "Preparing temporary directories...");
 					await UniTask.Yield();
 
 					// Préparation des répertoires temporaires
-					var preparation = PrepareTemporaryDirectories(data);
-					if (preparation.Type != BuildResultType.Success) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(preparation);
-					}
-
-					// Sauvegarde initiale des scènes
-					if (!EditorSceneManager.SaveOpenScenes()) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(
-							new BuildResult {
-								Type    = BuildResultType.Failed,
-								Message = "Failed to save open scenes. Please ensure all scenes are saved before building."
-							}
-						);
-					}
+					var preparation = PrepareTemporaryDirectories(state);
+					if (preparation.Type != BuildResultType.Success)
+						return Fail(preparation);
 
 					AssetDatabase.Refresh();
 
-					// Report progress: Compiling scripts
-					data.ProgressCallback?.Invoke(0.40f, "Compiling scripts...");
+					// Report progress: Copying the world
+					state.ProgressCallback?.Invoke(0.20f, "Copying the world...");
 					await UniTask.Yield();
 
-					// Compilation des scripts
-					var compilation = await CompileScripts(data.Descriptor.gameObject);
-					if (compilation.Type != BuildResultType.Success) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(compilation);
-					}
+					// Le build travaille sur une copie : la scène d'origine n'est ni compilée, ni modifiée,
+					// ni réécrite (SaveAsCopy), donc jamais réimportée en cours de route.
+					state.Copy = WorldCopy.Create(state.Descriptor, state.TempPath);
+					if (state.Copy == null)
+						return Fail(
+							new BuildResult {
+								Type    = BuildResultType.InvalidScenes,
+								Message = "Failed to copy the world scene. Make sure the scene is saved and that 'Assets/Temp/' is writable."
+							}
+						);
+
+					// Report progress: Compiling scripts
+					state.ProgressCallback?.Invoke(0.40f, "Compiling scripts...");
+					await UniTask.Yield();
+
+					// Compilation des scripts, sur la copie
+					var compilation = await CompileScripts(state.Copy.Descriptor.gameObject);
+					if (compilation.Type != BuildResultType.Success)
+						return Fail(compilation);
+
+					// Persister le résultat de la compilation au plus tôt : c'est le disque qui est bundlé
+					if (!state.Copy.Save())
+						return Fail(
+							new BuildResult {
+								Type    = BuildResultType.Failed,
+								Message = "Failed to save the compiled world copy."
+							}
+						);
 
 					// Report progress: Processing scenes
-					data.ProgressCallback?.Invoke(0.60f, "Processing scenes and dependencies...");
+					state.ProgressCallback?.Invoke(0.60f, "Processing scenes and dependencies...");
 					await UniTask.Yield();
 
-					var processing = await ProcessScenesAndDependencies(data);
-					if (processing.Type != BuildResultType.Success) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(processing);
-					}
+					var processing = await ProcessScenesAndDependencies(state.Copy.Descriptor.gameObject, state.TempPath);
+					if (processing.Type != BuildResultType.Success)
+						return Fail(processing);
+
+					// Report progress: Saving the compiled copy
+					state.ProgressCallback?.Invoke(0.70f, "Saving the compiled world...");
+					await UniTask.Yield();
+
+					// La scène bundlée est celle du disque : elle doit contenir le résultat de la compilation
+					if (!state.Copy.Save())
+						return Fail(
+							new BuildResult {
+								Type    = BuildResultType.Failed,
+								Message = "Failed to save the compiled world copy."
+							}
+						);
 
 					// Report progress: Building AssetBundle
-					data.ProgressCallback?.Invoke(0.80f, "Building AssetBundle...");
-					await UniTask.NextFrame();
-
-					// Création de l'AssetBundle des scènes
-					var assetBundleResult = await BuildScenesAssetBundle(data);
-					if (assetBundleResult.Type != BuildResultType.Success) {
-						EditorSceneManager.RestoreSceneManagerSetup(rollback);
-						return Finish(assetBundleResult);
-					}
-
-					// Report progress: Cleanup
-					data.ProgressCallback?.Invoke(0.95f, "Cleaning up...");
+					state.ProgressCallback?.Invoke(0.80f, "Building AssetBundle...");
+					// Yield et non NextFrame : en Edit mode Time.frameCount n'avance que lorsque l'éditeur
+					// reçoit un frame (focus, repaint), un NextFrame gèlerait le build en arrière-plan.
 					await UniTask.Yield();
 
-					// TODO: Cleanup temporary files
+					// Un AssetBundle par plateforme ciblée
+					var outputs = new List<BuildOutput>();
+					foreach (var platform in state.Targets) {
+						state.Filename = GenerateDefaultFilename(state.SceneName, platform);
+
+						state.ProgressCallback?.Invoke(
+							0.80f,
+							$"Building AssetBundle for {platform.GetPlatformName()}... ({outputs.Count + 1}/{state.Targets.Length})"
+						);
+						await UniTask.Yield();
+
+						var assetBundleResult = await BuildScenesAssetBundle(state, platform);
+						if (assetBundleResult.Type != BuildResultType.Success)
+							return Fail(assetBundleResult);
+
+						outputs.Add(new BuildOutput(platform, assetBundleResult.Output));
+					}
+
+					// La copie a rempli son rôle : suppression avant de prévenir les listeners
+					state.Copy.Dispose();
+					state.Copy = null;
+
+					// Report progress: Cleanup
+					state.ProgressCallback?.Invoke(0.95f, "Cleaning up...");
+					await UniTask.Yield();
 
 					// Report progress: Complete
-					data.ProgressCallback?.Invoke(1.0f, "Build completed successfully!");
+					state.ProgressCallback?.Invoke(1.0f, "Build completed successfully!");
 					await UniTask.Yield();
 
 					return Finish(
 						new BuildResult {
-							Type   = BuildResultType.Success,
-							Output = assetBundleResult.Output
+							Type    = BuildResultType.Success,
+							Outputs = outputs.ToArray()
 						}
 					);
 				} catch (Exception e) {
 					// Restore scene on error
+					state.Copy?.Dispose();
+					state.Copy = null;
 					EditorSceneManager.RestoreSceneManagerSetup(rollback);
 					Logger.LogError(new Exception("Build failed with exception", e));
 					return Finish(
@@ -213,6 +311,8 @@ namespace Nox.Worlds.Pipeline {
 					IsBuilding = false;
 				}
 			} catch (Exception e) {
+				state.Copy?.Dispose();
+				state.Copy = null;
 				Logger.LogError(new Exception("Build failed with exception", e));
 				return Finish(
 					new BuildResult {
@@ -226,7 +326,7 @@ namespace Nox.Worlds.Pipeline {
 		/// <summary>
 		/// Validates build prerequisites and parameters
 		/// </summary>
-		private static BuildResult ValidateBuildPrerequisites(BuildData data) {
+		private static BuildResult ValidateBuildPrerequisites(State state) {
 			if (IsBuilding)
 				return new BuildResult {
 					Type    = BuildResultType.AlreadyBuilding,
@@ -245,42 +345,90 @@ namespace Nox.Worlds.Pipeline {
 					Message = "Unity is currently in play mode. Please stop playing before building."
 				};
 
-			if (data.Target == Platform.None)
+			// Le Scriptable Build Pipeline refuse de construire tant qu'une scène chargée est modifiée :
+			// on échoue tout de suite, plutôt qu'après la copie et la compilation du world.
+			var dirtyScenes = DirtyScenes();
+			if (dirtyScenes.Length > 0)
+				return new BuildResult {
+					Type    = BuildResultType.Failed,
+					Message = $"These loaded scenes have unsaved changes: {string.Join(", ", dirtyScenes)}. Save them and build again."
+				};
+
+			if (state.Targets.Length == 0)
 				return new BuildResult {
 					Type    = BuildResultType.InvalidTarget,
 					Message = "No build target specified. Please select a valid target platform."
 				};
 
-			if (!data.Target.IsSupported())
-				return new BuildResult {
-					Type    = BuildResultType.UnsupportedTarget,
-					Message = $"The build target {data.Target} is not supported."
-				};
+			foreach (var platform in state.Targets)
+				if (!platform.IsSupported())
+					return new BuildResult {
+						Type    = BuildResultType.UnsupportedTarget,
+						Message = $"The build target {platform.GetPlatformName()} is not supported."
+					};
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
-				Output = data.OutputPath
+				Type = BuildResultType.Success
 			};
+		}
+
+		/// <summary>
+		/// Scènes chargées avec des modifications non écrites. Le Scriptable Build Pipeline refuse de
+		/// construire un bundle tant qu'il en existe une (<c>ReturnCode.UnsavedChanges</c>).
+		/// </summary>
+		private static string[] DirtyScenes() {
+			var scenes = new List<string>();
+
+			for (var i = 0; i < EditorSceneManager.sceneCount; i++) {
+				var scene = EditorSceneManager.GetSceneAt(i);
+
+				if (scene.isDirty)
+					scenes.Add(string.IsNullOrEmpty(scene.path) ? scene.name : scene.path);
+			}
+
+			return scenes.ToArray();
+		}
+
+		/// <summary>
+		/// Targets to build: the requested ones, deduplicated and in the
+		/// <see cref="PlatformExtensions.All"/> order, falling back on the current platform.
+		/// </summary>
+		private static Platform[] NormalizeTargets(Platform[] requested) {
+			var targets = (requested ?? Array.Empty<Platform>())
+				.Where(platform => platform != Platform.None)
+				.Distinct()
+				.OrderBy(platform => Array.IndexOf(PlatformExtensions.All, platform))
+				.ToArray();
+
+			return targets.Length > 0
+				? targets
+				: new[] { PlatformExtensions.CurrentPlatform };
 		}
 
 		/// <summary>
 		/// Prepares temporary directories and validates scene
 		/// </summary>
-		private static BuildResult PrepareTemporaryDirectories(BuildData data) {
-			if (!data.Descriptor || !data.Descriptor.gameObject)
+		private static BuildResult PrepareTemporaryDirectories(State state) {
+			if (!state.Descriptor || !state.Descriptor.gameObject)
 				return new BuildResult {
 					Type    = BuildResultType.InvalidScenes,
 					Message = "The WorldDescriptor is not set or the game object is invalid."
 				};
 
-			var mainScene = data.Descriptor.gameObject.scene;
+			var mainScene = state.Descriptor.gameObject.scene;
 			if (!mainScene.IsValid() || !mainScene.isLoaded)
 				return new BuildResult {
 					Type    = BuildResultType.InvalidScenes,
 					Message = "The scene is not valid. Please ensure the scene is properly set up."
 				};
 
-			var tempPath = data.TempPath;
+			if (string.IsNullOrEmpty(mainScene.path))
+				return new BuildResult {
+					Type    = BuildResultType.InvalidScenes,
+					Message = "The world scene has never been saved. Save it before building."
+				};
+
+			var tempPath = state.TempPath;
 			if (Directory.Exists(tempPath))
 				try {
 					Directory.Delete(tempPath, true);
@@ -294,16 +442,16 @@ namespace Nox.Worlds.Pipeline {
 			Directory.CreateDirectory(tempPath);
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
-				Output = tempPath
+				Type = BuildResultType.Success
 			};
 		}
 
 		/// <summary>
-		/// Compiles all ICompilable scripts in the loaded scenes
+		/// Compiles all ICompilable scripts of the world copy
 		/// </summary>
-		private static async UniTask<BuildResult> CompileScripts(GameObject mainObject) {
-			var compilableScripts = mainObject
+		/// <param name="root">Racine de la copie de travail, jamais celle de la scène d'origine</param>
+		private static async UniTask<BuildResult> CompileScripts(GameObject root) {
+			var compilableScripts = root
 				.GetComponentsInChildren<ICompilable>(true)
 				.OrderBy(s => s.CompileOrder)
 				.ToList();
@@ -315,10 +463,10 @@ namespace Nox.Worlds.Pipeline {
 			if (!await compiler.Compile())
 				return new BuildResult {
 					Type    = BuildResultType.Failed,
-					Message = "Script compilation failed. Original scenes have been restored from backup."
+					Message = "Script compilation failed. The world scene has not been modified."
 				};
 
-			var removeScripts = mainObject
+			var removeScripts = root
 				.GetComponentsInChildren<IRemoveOnBuild>(true)
 				.ToArray();
 
@@ -357,21 +505,18 @@ namespace Nox.Worlds.Pipeline {
 			await UniTask.Yield();
 
 			return new BuildResult {
-				Type   = BuildResultType.Success,
-				Output = null
+				Type = BuildResultType.Success
 			};
 		}
 
 		/// <summary>
 		/// Saves compiled scenes and copies dependencies to temporary directory
 		/// </summary>
-		private static async UniTask<BuildResult> ProcessScenesAndDependencies(BuildData data) {
-			var tempPath = data.TempPath;
-
+		/// <param name="worldGameObject">Racine de la copie de travail</param>
+		/// <param name="tempPath">Répertoire temporaire du build</param>
+		private static async UniTask<BuildResult> ProcessScenesAndDependencies(GameObject worldGameObject, string tempPath) {
 			try {
 				// Process world scene (similar to avatar prefab processing)
-				var worldGameObject = data.Descriptor.gameObject;
-
 				// Validate world GameObject before processing
 				if (!worldGameObject)
 					return new BuildResult {
@@ -470,42 +615,48 @@ namespace Nox.Worlds.Pipeline {
 		/// </summary>
 		/// <param name="data">Build data containing target platform and descriptor info</param>
 		/// <returns>BuildResult indicating success or failure</returns>
-		private static async UniTask<BuildResult> BuildScenesAssetBundle(BuildData data) {
+		private static async UniTask<BuildResult> BuildScenesAssetBundle(State state, Platform platform) {
 			try {
 				// Validate input data
-				if (data == null)
+				if (state == null)
 					return new BuildResult {
 						Type    = BuildResultType.Failed,
-						Message = "BuildData is null."
+						Message = "Build state is null."
 					};
 
-				if (string.IsNullOrEmpty(data.TempPath))
+				if (string.IsNullOrEmpty(state.TempPath))
 					return new BuildResult {
 						Type    = BuildResultType.Failed,
 						Message = "Temporary path is null or empty."
 					};
 
-				if (string.IsNullOrEmpty(data.OutputPath))
+				if (string.IsNullOrEmpty(state.OutputPath))
 					return new BuildResult {
 						Type    = BuildResultType.Failed,
 						Message = "Output path is null or empty."
 					};
 
-				if (string.IsNullOrEmpty(data.Filename))
+				if (string.IsNullOrEmpty(state.Filename))
 					return new BuildResult {
 						Type    = BuildResultType.Failed,
 						Message = "Filename is null or empty."
 					};
 
-				var tempPath = data.TempPath;
+				if (state.Copy == null)
+					return new BuildResult {
+						Type    = BuildResultType.Failed,
+						Message = "The world copy is missing."
+					};
+
+				var tempPath = state.TempPath;
 				Logger.Log("Building AssetBundle for world scenes...");
 
 				// Report progress: Collecting scene files
-				data.ProgressCallback?.Invoke(0.82f, "Collecting world scenes...");
+				state.ProgressCallback?.Invoke(0.82f, "Collecting world scenes...");
 				await UniTask.Yield();
 
-				// Collect the main world scene (get from descriptor's scene path)
-				var sceneFiles = new List<string> { data.Descriptor.gameObject.scene.path };
+				// Collect the main world scene (the compiled copy, not the authored scene)
+				var sceneFiles = new List<string> { state.Copy.ScenePath };
 
 
 				if (sceneFiles.Count == 0 || sceneFiles.Any(string.IsNullOrEmpty))
@@ -515,7 +666,7 @@ namespace Nox.Worlds.Pipeline {
 					};
 
 				// Report progress: Preparing AssetBundle
-				data.ProgressCallback?.Invoke(0.84f, "Preparing AssetBundle build...");
+				state.ProgressCallback?.Invoke(0.84f, "Preparing AssetBundle build...");
 				await UniTask.Yield();
 
 				Logger.Log($"Found {sceneFiles.Count} scene file(s) to bundle:");
@@ -544,12 +695,12 @@ namespace Nox.Worlds.Pipeline {
 				// Create AssetBundleBuild
 				var assetBundleBuilds = new AssetBundleBuild[ 1 ];
 				assetBundleBuilds[0] = new AssetBundleBuild {
-					assetBundleName  = data.Filename,
+					assetBundleName  = state.Filename,
 					assetNames       = validAssetFiles.ToArray(),
 					addressableNames = validAssetFiles.Select(Path.GetFileNameWithoutExtension).ToArray()
 				};
 
-				Logger.Log($"Created AssetBundle build: {data.Filename} with {assetBundleBuilds[0].assetNames.Length} assets");
+				Logger.Log($"Created AssetBundle build: {state.Filename} with {assetBundleBuilds[0].assetNames.Length} assets");
 
 				// Validate the AssetBundleBuild
 				if (assetBundleBuilds[0].assetNames.Length == 0)
@@ -565,22 +716,22 @@ namespace Nox.Worlds.Pipeline {
 					};
 
 				// Report progress: Creating output directory
-				data.ProgressCallback?.Invoke(0.86f, "Creating output directory...");
+				state.ProgressCallback?.Invoke(0.86f, "Creating output directory...");
 				await UniTask.Yield();
 
 				// Create output directory
-				var outputPath = data.OutputPath;
+				var outputPath = state.OutputPath;
 				Directory.CreateDirectory(outputPath);
 
 				// Build options optimized for worlds with maximum compression
 				var options = BuildAssetBundleOptions.ForceRebuildAssetBundle;
 
 				// Report progress: Building AssetBundle (this is the long operation)
-				data.ProgressCallback?.Invoke(0.88f, "Building world AssetBundle (this may take a while)...");
+				state.ProgressCallback?.Invoke(0.88f, "Building world AssetBundle (this may take a while)...");
 				await UniTask.Yield();
 
 				// Validate build target
-				var buildTarget = data.Target.GetBuildTarget();
+				var buildTarget = platform.GetBuildTarget();
 				Logger.Log($"Building world AssetBundle with target: {buildTarget}");
 
 				// Build the AssetBundle
@@ -591,7 +742,7 @@ namespace Nox.Worlds.Pipeline {
 					buildTarget
 				);
 
-				data.ProgressCallback?.Invoke(0.92f, "Finalizing world AssetBundle...");
+				state.ProgressCallback?.Invoke(0.92f, "Finalizing world AssetBundle...");
 
 				if (!buildSuccess) {
 					Logger.LogError("World AssetBundle build failed. Check console for details.");
@@ -601,11 +752,11 @@ namespace Nox.Worlds.Pipeline {
 					};
 				}
 
-				Logger.Log($"World AssetBundle '{data.Filename}' built successfully at: {outputPath}");
+				Logger.Log($"World AssetBundle '{state.Filename}' built successfully at: {outputPath}");
 				Logger.Log($"World scenes built without dependencies");
 				return new BuildResult {
-					Type   = BuildResultType.Success,
-					Output = Path.Combine(outputPath, data.Filename)
+					Type    = BuildResultType.Success,
+					Outputs = new[] { new BuildOutput(platform, Path.Combine(outputPath, state.Filename)) }
 				};
 			} catch (Exception e) {
 				Logger.LogError($"World AssetBundle build failed: {e.Message}");
@@ -617,12 +768,13 @@ namespace Nox.Worlds.Pipeline {
 		}
 
 		/// <summary>
-		/// Builds an AssetBundle and returns whether the operation was successful
-		/// Thanks for "https://light11.hatenadiary.com/entry/2021/03/30/201333" to fix the issue with BuildPipeline.BuildAssetBundles and UniTask
+		/// Construit l'AssetBundle via le Scriptable Build Pipeline, pour la cible demandée et sans
+		/// changer la plateforme active (voir le commentaire dans la méthode). Renvoie <c>false</c> quand
+		/// le pipeline échoue ou qu'un bundle attendu n'a pas été écrit.
 		/// </summary>
 		/// <param name="outputPath">The output path for the AssetBundle</param>
 		/// <param name="assetBundleBuilds">The AssetBundle builds to create</param>
-		/// <param name="options">Build options</param>
+		/// <param name="options">Build options, seul <see cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/> est pris en compte</param>
 		/// <param name="buildTarget">Target platform</param>
 		/// <returns>True if the build was successful, false otherwise</returns>
 		private static bool BuildAssetBundleInternal(string outputPath, AssetBundleBuild[] assetBundleBuilds, BuildAssetBundleOptions options, BuildTarget buildTarget) {
@@ -672,56 +824,65 @@ namespace Nox.Worlds.Pipeline {
 				AssetDatabase.Refresh();
 				AssetDatabase.SaveAssets();
 
-				// Sanitize bundle names: Unity's BuildPipeline rejects names with dots or hyphens.
-				// Build with safe names, then rename the output files to the original names.
-				var sanitizedBuilds = assetBundleBuilds.Select(b => {
-					var s = b;
-					s.assetBundleName = Regex.Replace(b.assetBundleName, @"[.\-]", "_");
-					return s;
-				}).ToArray();
+				// Scriptable Build Pipeline, sans la tâche SwitchToBuildPlatform de son preset : les
+				// paramètres portent la cible, donc ContentPipeline résout les représentations « player »
+				// et les dépendances de scène pour cette cible sans activer la plateforme correspondante.
+				// Le pipeline historique (BuildPipeline.BuildAssetBundles avec un target explicite)
+				// recompilait les scripts du joueur pour la cible puis rechargeait le domaine au milieu du
+				// build : la tâche async en cours était détruite et le build restait figé pour toujours.
+				var parameters = new BundleBuildParameters(
+					buildTarget,
+					BuildPipeline.GetBuildTargetGroup(buildTarget),
+					outputPath
+				) {
+					UseCache = (options & BuildAssetBundleOptions.ForceRebuildAssetBundle) == 0
+				};
 
-				var success = false;
+				var tasks = DefaultBuildTasks
+					.Create(DefaultBuildTasks.Preset.AssetBundleCompatible)
+					.Where(task => !(task is SwitchToBuildPlatform))
+					.ToList();
+
+				ReturnCode code;
 
 				try {
-					success = BuildPipeline.BuildAssetBundles(outputPath, assetBundleBuilds, options, buildTarget);
+					code = ContentPipeline.BuildAssetBundles(parameters, new BundleBuildContent(assetBundleBuilds), out _, tasks);
 				} catch (Exception e) {
-					Logger.LogDebug($"BuildPipeline.BuildAssetBundles failed: {e.Message}");
-				}
-				
-				if (!success)
-					try {
-						success = CompatibilityBuildPipeline.BuildAssetBundles(outputPath, sanitizedBuilds, options, buildTarget);
-					} catch (Exception e) {
-						Logger.LogDebug($"CompatibilityBuildPipeline failed: {e.Message}");
-					}
-				
-				if (!success) {
-					Logger.LogError("AssetBundle build failed. No manifest was created.");
-					if (!Directory.Exists(outputPath))
-						return false;
-
-					var files = Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories);
-					foreach (var file in files)
-						Logger.LogError($"  - {file}");
+					Logger.LogError($"ContentPipeline.BuildAssetBundles failed: {e.Message}");
 					return false;
 				}
 
-				// Rename sanitized output files back to the original bundle names
-				for (var i = 0; i < assetBundleBuilds.Length; i++) {
-					var originalName  = assetBundleBuilds[i].assetBundleName;
-					var sanitizedName = sanitizedBuilds[i].assetBundleName;
+				if (code != ReturnCode.Success) {
+					Logger.LogError($"AssetBundle build failed ({code}).");
 
-					if (originalName == sanitizedName)
+					if (code == ReturnCode.UnsavedChanges) {
+						var dirtyScenes = DirtyScenes();
+
+						Logger.LogError(
+							dirtyScenes.Length > 0
+								? $"Loaded scenes with unsaved changes: {string.Join(", ", dirtyScenes)}. Save them and build again."
+								: "A loaded scene has unsaved changes: save the open scenes and build again."
+						);
+					}
+
+					if (Directory.Exists(outputPath)) {
+						var files = Directory.GetFiles(outputPath, "*", SearchOption.AllDirectories);
+						foreach (var file in files)
+							Logger.LogError($"  - {file}");
+					}
+
+					return false;
+				}
+
+				// Le pipeline ne signale pas toujours un bundle manquant : on vérifie ce qui a été écrit
+				foreach (var bundle in assetBundleBuilds) {
+					var bundlePath = Path.Combine(outputPath, bundle.assetBundleName);
+
+					if (File.Exists(bundlePath))
 						continue;
 
-					var src = Path.Combine(outputPath, sanitizedName);
-					var dst = Path.Combine(outputPath, originalName);
-					if (!File.Exists(src))
-						continue;
-
-					if (File.Exists(dst))
-						File.Delete(dst);
-					File.Move(src, dst);
+					Logger.LogError($"AssetBundle '{bundle.assetBundleName}' was not written to '{outputPath}'.");
+					return false;
 				}
 
 				Logger.Log("AssetBundle build completed successfully.");
@@ -839,7 +1000,7 @@ namespace Nox.Worlds.Pipeline {
 		/// </summary>
 		/// <param name="mainSceneName">The name of the main scene</param>
 		/// <param name="platform"></param>
-		/// <returns>A filename in the format: date-sceneName.noxw</returns>
+		/// <returns>A filename in the format: date-sceneName-platform.nw</returns>
 		private static string GenerateDefaultFilename(string mainSceneName, Platform platform) {
 			var date      = DateTime.Now.ToString("yyyy-MM-dd-HHmm");
 			var sceneName = mainSceneName.ToLowerInvariant();
@@ -847,7 +1008,7 @@ namespace Nox.Worlds.Pipeline {
 			// Remove any invalid filename characters from scene name
 			sceneName = Regex.Replace(sceneName, @"[^a-z0-9\-_]", "");
 
-			return $"{date}-{sceneName}-{platform.GetPlatformName()}.noxw";
+			return $"{date}-{sceneName}-{platform.GetPlatformName()}.nw";
 		}
 
 		/// <summary>

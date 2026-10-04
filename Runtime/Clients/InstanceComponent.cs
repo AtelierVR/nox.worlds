@@ -1,7 +1,9 @@
+using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
 using Nox.CCK.Utils;
 using Nox.Instances;
+using Nox.CCK.Network.Assets;
 using UnityEngine;
 using UnityEngine.UI;
 using Logger = Nox.CCK.Utils.Logger;
@@ -39,7 +41,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			text.UpdateText(
 				"world.instance.text", new[] {
 					instance.Title
-					?? reference.Page.World.Title
+					?? reference.Page.World.Title?.Resolve()
 					?? instance.Identifier.ToString()
 				}
 			);
@@ -59,7 +61,7 @@ namespace Nox.Worlds.Runtime.Clients {
 
 
 		private void UpdateThumbnail(IInstance instance) {
-			var url = instance?.Thumbnail ?? reference.Page.World.Thumbnail;
+			var url = instance?.Thumbnail ?? reference.Page.World.BestImage(1f)?.Url;   // square card slot
 
 			if (string.IsNullOrEmpty(url)) {
 				image.sprite = null;

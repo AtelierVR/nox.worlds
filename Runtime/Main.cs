@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -9,8 +9,10 @@ using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Mods.Initializers;
 using Nox.CCK.Utils;
+using Nox.CCK.Network.Assets;
 using Nox.CCK.Worlds;
 using Nox.Network;
+using Nox.Network.Assets;
 using Nox.Search;
 using Nox.Sessions;
 using Nox.Tables;
@@ -51,6 +53,14 @@ namespace Nox.Worlds.Runtime {
 			=> Instance.CoreAPI.ModAPI
 				.GetMod("network")
 				?.GetInstance<INetworkAPI>();
+
+		/// <summary>Generic asset pipeline, shared with every other asset type.</summary>
+		public static IAssetsAPI AssetsAPI
+			=> Instance == null
+				? null
+				: Instance.CoreAPI.ModAPI
+					.GetMod("network")
+					?.GetInstance<IAssetsAPI>();
 
 		static internal ITableAPI TableAPI
 			=> Instance.CoreAPI.ModAPI
@@ -199,25 +209,19 @@ namespace Nox.Worlds.Runtime {
 			=> await Network.Search(SearchRequest.From(data));
 
 		public async UniTask<IWorld> Create(ICreateWorldRequest data, string server)
-			=> await Network.Create(CreateWorldRequest.From(data), server);
+			=> await Network.Create(WorldCreateRequest.From(data), server);
 
 		public async UniTask<IWorld> Update(Identifier identifier, IUpdateWorldRequest form)
-			=> await Network.Update(identifier, UpdateWorldRequest.From(form));
+			=> await Network.Update(identifier, WorldUpdateRequest.From(form));
 
 		public async UniTask<bool> Delete(Identifier identifier)
 			=> await Network.Delete(identifier);
 
-		public async UniTask<IAssetSearchResponse> SearchAssets(Identifier identifier, IAssetSearchRequest data, CancellationToken token = default)
-			=> await Network.SearchAssets(identifier, AssetSearchRequest.From(data), token);
+		public async UniTask<IAssetFile> ResolveBundle(Identifier identifier, CancellationToken token = default)
+			=> await Network.ResolveBundle(identifier, token);
 
-		public async UniTask<bool> UploadThumbnail(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
-			=> await Network.UploadThumbnail(identifier, texture, onProgress);
-
-		public async UniTask<IUploadAssetResponse> UploadAssetFile(Identifier identifier, uint assetId, string fileName, string fileHash = null, Action<float> onProgress = null)
-			=> await Network.UploadAssetFile(identifier, assetId, fileName, fileHash, onProgress);
-
-		public async UniTask<IWorldAsset> CreateAsset(Identifier identifier, ICreateAssetRequest data)
-			=> await Network.CreateAsset(identifier, CreateAssetRequest.From(data));
+		public async UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null)
+			=> await Network.AddImage(identifier, texture, onProgress);
 
 		#endregion
 
@@ -271,44 +275,47 @@ namespace Nox.Worlds.Runtime {
 				return;
 			}
 
-			// Recherche de l'asset compatible avec la plateforme et le moteur courants
-			var req = new AssetSearchRequest {
-				Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
-				Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
-				Limit     = 1,
-			};
-
-			IAssetSearchResponse response;
+			// Bundle compatible avec la plateforme et le moteur courants
+			IAssetFile asset;
 			try {
-				response = await SearchAssets(identifier, req);
+				asset = await ResolveBundle(identifier);
 			} catch (Exception e) {
-				CoreAPI.LoggerAPI.LogWarning($"[World] Failed to search assets for home world '{identifier}': {e.Message}");
+				CoreAPI.LoggerAPI.LogWarning($"[World] Failed to resolve the bundle of home world '{identifier}': {e.Message}");
 				return;
 			}
 
-			var asset = response?.Items?.FirstOrDefault();
-			if (asset == null || string.IsNullOrEmpty(asset.Hash) || string.IsNullOrEmpty(asset.Url)) {
-				CoreAPI.LoggerAPI.LogWarning($"[World] No compatible asset found for home world '{identifier}' (platform={req.Platforms[0]}, engine={req.Engines[0]}).");
+			if (asset == null || string.IsNullOrEmpty(asset.Url)) {
+				CoreAPI.LoggerAPI.LogWarning(
+					$"[World] No compatible bundle for home world '{identifier}' "
+					+ $"(platform={PlatformExtensions.CurrentPlatform.GetPlatformName()}, engine={EngineExtensions.CurrentEngine.GetEngineName()})."
+				);
+				return;
+			}
+
+			var hash = asset.CacheKey();
+
+			if (string.IsNullOrEmpty(hash)) {
+				CoreAPI.LoggerAPI.LogWarning($"[World] The bundle of home world '{identifier}' carries no hash.");
 				return;
 			}
 
 			// Téléchargement si absent du cache
-			if (!HasInCache(asset.Hash)) {
-				CoreAPI.LoggerAPI.LogDebug($"[World] Pre-downloading home world '{identifier}' (hash: {asset.Hash})...");
+			if (!HasInCache(hash)) {
+				CoreAPI.LoggerAPI.LogDebug($"[World] Pre-downloading home world '{identifier}' (hash: {hash})...");
 				try {
-					var download = DownloadToCache(asset.Url, hash: asset.Hash);
+					var download = DownloadToCache(asset.Url, hash: hash);
 					await download.Start();
 				} catch (Exception e) {
 					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download failed for home world '{identifier}': {e.Message}");
 					return;
 				}
 
-				if (!HasInCache(asset.Hash)) {
-					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download of home world '{identifier}' completed but hash '{asset.Hash}' not found in cache.");
+				if (!HasInCache(hash)) {
+					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download of home world '{identifier}' completed but hash '{hash}' not found in cache.");
 					return;
 				}
 			} else {
-				CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{identifier}' already in cache (hash: {asset.Hash}).");
+				CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{identifier}' already in cache (hash: {hash}).");
 			}
 
 			// Sauvegarde dans la config pour le chargement offline
@@ -316,7 +323,7 @@ namespace Nox.Worlds.Runtime {
 			config.Set("home", identifier.ToString(identifier.IsLocal(user.Server) ? null : identifier.Server));
 			config.Save();
 
-			CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{identifier}' ready. Config updated (hash: {asset.Hash}).");
+			CoreAPI.LoggerAPI.LogDebug($"[World] Home world '{identifier}' ready. Config updated (hash: {hash}).");
 		}
 
 		#endregion
