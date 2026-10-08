@@ -6,6 +6,7 @@
     </ui:GroupBox>
     <ui:VisualElement style="flex-grow: 1;">
         <ui:ScrollView style="display: flex;">
+            <ui:VisualElement name="notification-summary" class="notification-summary" style="display: none;" />
             <ui:VisualElement style="flex-grow: 1; display: flex;">
                 <ui:VisualElement name="not-logged" style="flex-grow: 1; justify-content: center; display: none;">
                     <ui:GroupBox class="p-8 m-0">

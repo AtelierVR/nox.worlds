@@ -257,6 +257,10 @@ MonoBehaviour:
       value: "New"
     - key: world.editor.notification.no_world_descriptor.action.create
       value: "Create"
+    - key: world.editor.notification.cameras
+      value: "This world contains {0} camera(s). At runtime they will not render to the XR eyes nor to the desktop screen (unless they render to a RenderTexture)."
+    - key: world.editor.notification.cameras.action.untag
+      value: "Untag Cameras"
     - key: settings.entry.audio.channel.world
       value: "Monde"
   - IETF: fr-FR
@@ -429,3 +433,7 @@ MonoBehaviour:
       value: "Cr\xE9er"
     - key: settings.entry.audio.channel.world
       value: "World"
+    - key: world.editor.notification.cameras
+      value: "Ce monde contient {0} cam\xE9ra(s). Au runtime, elles ne rendront pas dans les yeux XR ni sur l'\xE9cran bureau (sauf si elles rendent dans une RenderTexture)."
+    - key: world.editor.notification.cameras.action.untag
+      value: "Retirer le tag des cam\xE9ras"
