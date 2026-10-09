@@ -21,16 +21,19 @@ using Transform = UnityEngine.Transform;
 
 namespace Nox.Worlds.Runtime.Clients {
 	public class WorldComponent : MonoBehaviour {
-		public GameObject withThumbnail;
-		public GameObject withoutThumbnail;
-		public Image thumbnail;
+		public GameObject        withThumbnail;
+		public GameObject        withoutThumbnail;
+		public GameObject        withBanner;
+		public GameObject        withoutBanner;
+		public Image             banner;
+		public AspectRatioFitter bannerAspect;
 		public TextLanguage title;
 		public TextLanguage identifier;
 		public TextLanguage label;
 		public Image labelIcon;
 		public RectTransform content;
 		public WorldPage Page;
-		private NetworkImage _thumbnailNetworkImage;
+		private NetworkImage _bannerNetworkImage;
 		private CancellationTokenSource _instanceTokenSource;
 		public RectTransform instanceList;
 		public GameObject instanceInfobox;
@@ -51,10 +54,12 @@ namespace Nox.Worlds.Runtime.Clients {
 			title.UpdateText("world.error");
 			identifier.UpdateText("world.error");
 			label.UpdateText("world.error");
-			thumbnail.sprite = null;
-			thumbnail.sprite = null;
+			banner.sprite = null;
+			banner.GetOrAddComponent<NetworkImage>().Url = null;
 			withThumbnail.SetActive(false);
-			withoutThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
+			withBanner.SetActive(false);
+			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
 			UpdateAssetAvailability(false);
 		}
@@ -63,10 +68,12 @@ namespace Nox.Worlds.Runtime.Clients {
 			title.UpdateText("world.loading");
 			identifier.UpdateText("world.loading");
 			label.UpdateText("world.loading");
-			thumbnail.sprite = null;
-			thumbnail.sprite = null;
+			banner.sprite = null;
+			banner.GetOrAddComponent<NetworkImage>().Url = null;
 			withThumbnail.SetActive(false);
-			withoutThumbnail.SetActive(true);
+			withoutThumbnail.SetActive(false);
+			withBanner.SetActive(false);
+			withoutBanner.SetActive(true);
 			descriptionContainer.SetActive(false);
 			UpdateAssetAvailability(false);
 		}
@@ -93,7 +100,9 @@ namespace Nox.Worlds.Runtime.Clients {
 				descriptionContainer.SetActive(false);
 
 
-			UpdateThumbnail(world);
+			withThumbnail.SetActive(false);
+			withoutThumbnail.SetActive(false);
+			UpdateBanner(world);
 			UpdateInstances(world).Forget();
 			UpdateFavoriteState().Forget();
 			UpdateOfflineButton();
@@ -104,20 +113,23 @@ namespace Nox.Worlds.Runtime.Clients {
 			HoverHome(_isHomeHover);
 		}
 
-		private void UpdateThumbnail(IWorld world) {
+		private void UpdateBanner(IWorld world) {
+			_bannerNetworkImage = banner.GetOrAddComponent<NetworkImage>();
+
 			var url = world.BestImage(1f)?.Url;   // square card slot
 
 			if (string.IsNullOrEmpty(url)) {
-				thumbnail.sprite = null;
-				withThumbnail.SetActive(false);
-				withoutThumbnail.SetActive(true);
+				banner.sprite = null;
+				_bannerNetworkImage.Url = null;
+				withBanner.SetActive(false);
+				withoutBanner.SetActive(false);
 				return;
 			}
 
-			_thumbnailNetworkImage = thumbnail.GetOrAddComponent<NetworkImage>();
-			_thumbnailNetworkImage.Url = url;
-			withThumbnail.SetActive(true);
-			withoutThumbnail.SetActive(false);
+			// Set the URL before activating so the NetworkImage starts loading on the first display.
+			_bannerNetworkImage.Url = url;
+			withoutBanner.SetActive(false);
+			withBanner.SetActive(true);
 		}
 
 		internal async UniTask UpdateInstances(IWorld world) {
@@ -546,11 +558,34 @@ namespace Nox.Worlds.Runtime.Clients {
 				Client.GetAsset<GameObject>("ui:prefabs/profile.prefab"),
 				Reference.GetComponent<RectTransform>("content", container)
 			);
-			component.identifier       = Reference.GetComponent<TextLanguage>("identifier", profile);
-			component.title            = Reference.GetComponent<TextLanguage>("title", profile);
-			component.thumbnail        = Reference.GetComponent<Image>("thumbnail", profile);
+			component.identifier    = Reference.GetComponent<TextLanguage>("identifier", profile);
+			component.title         = Reference.GetComponent<TextLanguage>("title", profile);
+			component.banner        = Reference.GetComponent<Image>("banner", profile);
+			component.bannerAspect  = Reference.GetComponent<AspectRatioFitter>("banner_aspect", profile);
+			component.withBanner    = Reference.GetReference("with_banner", profile);
+			component.withoutBanner = Reference.GetReference("without_banner", profile);
+
+			// Keep the banner aspect ratio in sync with the loaded texture.
+			var bannerNetworkImage = component.banner.GetOrAddComponent<NetworkImage>();
+			bannerNetworkImage.OnSuccess.AddListener(texture => {
+				if (texture.height > 0) {
+					component.bannerAspect.aspectRatio = (float)texture.width / texture.height;
+					component.withBanner.SetActive(true);
+					component.withoutBanner.SetActive(false);
+				}
+			});
+			bannerNetworkImage.OnError.AddListener(_ => {
+				// An empty URL means "no banner": keep the loading skeleton as-is.
+				if (string.IsNullOrEmpty(bannerNetworkImage.Url)) return;
+				component.withBanner.SetActive(false);
+				component.withoutBanner.SetActive(true);
+			});
+
+			// This page uses the banner as its main image: keep the profile thumbnail (avatar) hidden.
 			component.withThumbnail    = Reference.GetReference("with_thumbnail", profile);
 			component.withoutThumbnail = Reference.GetReference("without_thumbnail", profile);
+			component.withThumbnail.SetActive(false);
+			component.withoutThumbnail.SetActive(false);
 
 			// generate dashboard
 			container = Instantiate(Client.GetAsset<GameObject>("ui:prefabs/container_full.prefab"), splitContent);
