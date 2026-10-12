@@ -24,8 +24,8 @@ namespace Nox.Worlds.Pipeline {
 		public static bool IsBuilding;
 
 		/// <summary>
-		/// Racine des dossiers de travail du build. Les scènes qui s'y trouvent sont des copies jetables
-		/// et non des worlds : voir <see cref="WorldCopy"/>.
+		/// Root of the build working directories. The scenes found there are disposable copies, not
+		/// worlds: see <see cref="WorldCopy"/>.
 		/// </summary>
 		public const string TempRoot = "Assets/Temp/";
 
@@ -78,19 +78,19 @@ namespace Nox.Worlds.Pipeline {
 		}
 
 		/// <summary>
-		/// État interne d'un build. L'appelant ne fournit qu'un <see cref="BuildData"/> : les plateformes,
-		/// l'emplacement temporaire, le nom des bundles et la copie de travail sont décidés ici.
+		/// Internal state of a build. The caller only provides a <see cref="BuildData"/>: the target
+		/// platforms, the temporary location, the bundle names and the working copy are decided here.
 		/// </summary>
 		private sealed class State {
 			public WorldDescriptor Descriptor;
 			public string          OutputPath;
 
-			/// <summary>Plateformes à construire : un AssetBundle par entrée.</summary>
+			/// <summary>Platforms to build: one AssetBundle per entry.</summary>
 			public Platform[] Targets = Array.Empty<Platform>();
 
 			/// <summary>
-			/// Nom de la scène d'origine, figé avant toute opération : les références vers ses objets
-			/// peuvent être invalidées en cours de route (rechargement de scène, refresh).
+			/// Name of the original scene, frozen before any operation: references to its objects can be
+			/// invalidated along the way (scene reload, refresh).
 			/// </summary>
 			public string SceneName;
 
@@ -102,9 +102,9 @@ namespace Nox.Worlds.Pipeline {
 		}
 
 		/// <summary>
-		/// Construit le world de <paramref name="request"/> : une copie de travail est créée, compilée,
-		/// puis bundlée une fois par plateforme cible. La scène d'origine n'est jamais modifiée, et rien
-		/// n'est écrit hors de <see cref="BuildData.OutputPath"/> et de <see cref="TempRoot"/>.
+		/// Builds the world of <paramref name="request"/>: a working copy is created, compiled, then
+		/// bundled once per target platform. The original scene is never modified, and nothing is
+		/// written outside <see cref="BuildData.OutputPath"/> and <see cref="TempRoot"/>.
 		/// </summary>
 		public static async UniTask<BuildResult> Build(BuildData request) {
 			// Wrap user progress callback to also emit UnityEvent
@@ -169,17 +169,21 @@ namespace Nox.Worlds.Pipeline {
 				state.ProgressCallback?.Invoke(0.05f, "Validating build prerequisites...");
 				await UniTask.Yield();
 
-				// Validation des prérequis
+				// Validating the prerequisites
 				var validation = ValidateBuildPrerequisites(state);
 				if (validation.Type != BuildResultType.Success)
 					return Finish(validation);
 
+				// A bundle build can switch Unity's active platform (legacy API): capture it here so it can
+				// be restored once EVERY target has been built.
+				var previousPlatform = PlatformExtensions.CurrentPlatform;
+
 				IsBuilding = true;
 				var rollback = EditorSceneManager.GetSceneManagerSetup();
 
-				// La copie de travail est libérée avant d'annoncer la fin du build : les panels
-				// re-résolvent le world courant et ne doivent jamais tomber sur le descriptor de la copie.
-				// La scène d'origine n'ayant pas été touchée, il n'y a rien à restaurer.
+				// The working copy is released before announcing the end of the build: the panels
+				// re-resolve the current world and must never land on the copy's descriptor.
+				// The original scene was left untouched, so there is nothing to restore.
 				BuildResult Fail(BuildResult result) {
 					state.Copy?.Dispose();
 					state.Copy = null;
@@ -191,7 +195,7 @@ namespace Nox.Worlds.Pipeline {
 					state.ProgressCallback?.Invoke(0.10f, "Preparing temporary directories...");
 					await UniTask.Yield();
 
-					// Préparation des répertoires temporaires
+					// Preparing the temporary directories
 					var preparation = PrepareTemporaryDirectories(state);
 					if (preparation.Type != BuildResultType.Success)
 						return Fail(preparation);
@@ -202,8 +206,8 @@ namespace Nox.Worlds.Pipeline {
 					state.ProgressCallback?.Invoke(0.20f, "Copying the world...");
 					await UniTask.Yield();
 
-					// Le build travaille sur une copie : la scène d'origine n'est ni compilée, ni modifiée,
-					// ni réécrite (SaveAsCopy), donc jamais réimportée en cours de route.
+					// The build works on a copy: the original scene is neither compiled, modified nor
+					// rewritten (SaveAsCopy), so it is never reimported along the way.
 					state.Copy = WorldCopy.Create(state.Descriptor, state.TempPath);
 					if (state.Copy == null)
 						return Fail(
@@ -217,12 +221,12 @@ namespace Nox.Worlds.Pipeline {
 					state.ProgressCallback?.Invoke(0.40f, "Compiling scripts...");
 					await UniTask.Yield();
 
-					// Compilation des scripts, sur la copie
+					// Compiling the scripts, on the copy
 					var compilation = await CompileScripts(state.Copy.Descriptor.gameObject);
 					if (compilation.Type != BuildResultType.Success)
 						return Fail(compilation);
 
-					// Persister le résultat de la compilation au plus tôt : c'est le disque qui est bundlé
+					// Persist the compilation result as early as possible: the disk content is what gets bundled
 					if (!state.Copy.Save())
 						return Fail(
 							new BuildResult {
@@ -243,7 +247,7 @@ namespace Nox.Worlds.Pipeline {
 					state.ProgressCallback?.Invoke(0.70f, "Saving the compiled world...");
 					await UniTask.Yield();
 
-					// La scène bundlée est celle du disque : elle doit contenir le résultat de la compilation
+					// The bundled scene is the one on disk: it must contain the compilation result
 					if (!state.Copy.Save())
 						return Fail(
 							new BuildResult {
@@ -254,11 +258,11 @@ namespace Nox.Worlds.Pipeline {
 
 					// Report progress: Building AssetBundle
 					state.ProgressCallback?.Invoke(0.80f, "Building AssetBundle...");
-					// Yield et non NextFrame : en Edit mode Time.frameCount n'avance que lorsque l'éditeur
-					// reçoit un frame (focus, repaint), un NextFrame gèlerait le build en arrière-plan.
+					// Yield rather than NextFrame: in Edit mode Time.frameCount only advances when the
+					// editor receives a frame (focus, repaint), so a NextFrame would freeze a background build.
 					await UniTask.Yield();
 
-					// Un AssetBundle par plateforme ciblée
+					// One AssetBundle per target platform
 					var outputs = new List<BuildOutput>();
 					foreach (var platform in state.Targets) {
 						state.Filename = GenerateDefaultFilename(state.SceneName, platform);
@@ -276,7 +280,7 @@ namespace Nox.Worlds.Pipeline {
 						outputs.Add(new BuildOutput(platform, assetBundleResult.Output));
 					}
 
-					// La copie a rempli son rôle : suppression avant de prévenir les listeners
+					// The copy has served its purpose: delete it before notifying the listeners
 					state.Copy.Dispose();
 					state.Copy = null;
 
@@ -309,6 +313,10 @@ namespace Nox.Worlds.Pipeline {
 				} finally {
 					// Cleanup state
 					IsBuilding = false;
+
+					// Nothing should leave the editor on a target platform (e.g. Linux) after a build started
+					// from Windows: switch back to the previous one, once all targets are done.
+					RestorePlatform(previousPlatform);
 				}
 			} catch (Exception e) {
 				state.Copy?.Dispose();
@@ -321,6 +329,18 @@ namespace Nox.Worlds.Pipeline {
 					}
 				);
 			}
+		}
+
+		/// <summary>
+		/// Restores Unity's active platform to <paramref name="platform"/> when a build switched it.
+		/// No-op when it is already set: avoids a needless domain reload.
+		/// </summary>
+		private static void RestorePlatform(Platform platform) {
+			if (PlatformExtensions.CurrentPlatform == platform)
+				return;
+
+			Logger.Log($"Restoring the active build target to {platform}...");
+			PlatformExtensions.CurrentPlatform = platform;
 		}
 
 		/// <summary>
@@ -345,8 +365,8 @@ namespace Nox.Worlds.Pipeline {
 					Message = "Unity is currently in play mode. Please stop playing before building."
 				};
 
-			// Le Scriptable Build Pipeline refuse de construire tant qu'une scène chargée est modifiée :
-			// on échoue tout de suite, plutôt qu'après la copie et la compilation du world.
+			// The Scriptable Build Pipeline refuses to build while a loaded scene is modified: fail
+			// right away, rather than after copying and compiling the world.
 			var dirtyScenes = DirtyScenes();
 			if (dirtyScenes.Length > 0)
 				return new BuildResult {
@@ -373,8 +393,8 @@ namespace Nox.Worlds.Pipeline {
 		}
 
 		/// <summary>
-		/// Scènes chargées avec des modifications non écrites. Le Scriptable Build Pipeline refuse de
-		/// construire un bundle tant qu'il en existe une (<c>ReturnCode.UnsavedChanges</c>).
+		/// Loaded scenes with unsaved changes. The Scriptable Build Pipeline refuses to build a bundle
+		/// while one exists (<c>ReturnCode.UnsavedChanges</c>).
 		/// </summary>
 		private static string[] DirtyScenes() {
 			var scenes = new List<string>();
@@ -449,7 +469,7 @@ namespace Nox.Worlds.Pipeline {
 		/// <summary>
 		/// Compiles all ICompilable scripts of the world copy
 		/// </summary>
-		/// <param name="root">Racine de la copie de travail, jamais celle de la scène d'origine</param>
+		/// <param name="root">Root of the working copy, never the original scene</param>
 		private static async UniTask<BuildResult> CompileScripts(GameObject root) {
 			var compilableScripts = root
 				.GetComponentsInChildren<ICompilable>(true)
@@ -512,8 +532,8 @@ namespace Nox.Worlds.Pipeline {
 		/// <summary>
 		/// Saves compiled scenes and copies dependencies to temporary directory
 		/// </summary>
-		/// <param name="worldGameObject">Racine de la copie de travail</param>
-		/// <param name="tempPath">Répertoire temporaire du build</param>
+		/// <param name="worldGameObject">Root of the working copy</param>
+		/// <param name="tempPath">Temporary directory of the build</param>
 		private static async UniTask<BuildResult> ProcessScenesAndDependencies(GameObject worldGameObject, string tempPath) {
 			try {
 				// Process world scene (similar to avatar prefab processing)
@@ -527,7 +547,7 @@ namespace Nox.Worlds.Pipeline {
 				if (!worldGameObject.activeInHierarchy)
 					Logger.LogWarning("World GameObject is not active in hierarchy. This might cause issues.");
 
-				// Nettoyage complet des composants manquants AVANT de vérifier les problèmes
+				// Full cleanup of the missing components BEFORE checking for problems
 				Logger.Log("Cleaning up missing components from World GameObject and its children...");
 				CleanupMissingComponents(worldGameObject);
 
@@ -575,7 +595,7 @@ namespace Nox.Worlds.Pipeline {
 				// Final cleanup of any remaining null components
 				CleanupNullComponents(worldGameObject);
 
-				// Rafraîchir pour que Unity reconnaisse les changements
+				// Refresh so Unity picks up the changes
 				AssetDatabase.Refresh();
 				await UniTask.Yield();
 
@@ -768,13 +788,13 @@ namespace Nox.Worlds.Pipeline {
 		}
 
 		/// <summary>
-		/// Construit l'AssetBundle via le Scriptable Build Pipeline, pour la cible demandée et sans
-		/// changer la plateforme active (voir le commentaire dans la méthode). Renvoie <c>false</c> quand
-		/// le pipeline échoue ou qu'un bundle attendu n'a pas été écrit.
+		/// Builds the AssetBundle through the Scriptable Build Pipeline, for the requested target and
+		/// without switching the active platform (see the comment inside the method). Returns
+		/// <c>false</c> when the pipeline fails or when an expected bundle was not written.
 		/// </summary>
 		/// <param name="outputPath">The output path for the AssetBundle</param>
 		/// <param name="assetBundleBuilds">The AssetBundle builds to create</param>
-		/// <param name="options">Build options, seul <see cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/> est pris en compte</param>
+		/// <param name="options">Build options; only <see cref="BuildAssetBundleOptions.ForceRebuildAssetBundle"/> is honoured</param>
 		/// <param name="buildTarget">Target platform</param>
 		/// <returns>True if the build was successful, false otherwise</returns>
 		private static bool BuildAssetBundleInternal(string outputPath, AssetBundleBuild[] assetBundleBuilds, BuildAssetBundleOptions options, BuildTarget buildTarget) {
@@ -824,12 +844,12 @@ namespace Nox.Worlds.Pipeline {
 				AssetDatabase.Refresh();
 				AssetDatabase.SaveAssets();
 
-				// Scriptable Build Pipeline, sans la tâche SwitchToBuildPlatform de son preset : les
-				// paramètres portent la cible, donc ContentPipeline résout les représentations « player »
-				// et les dépendances de scène pour cette cible sans activer la plateforme correspondante.
-				// Le pipeline historique (BuildPipeline.BuildAssetBundles avec un target explicite)
-				// recompilait les scripts du joueur pour la cible puis rechargeait le domaine au milieu du
-				// build : la tâche async en cours était détruite et le build restait figé pour toujours.
+				// Scriptable Build Pipeline, without the SwitchToBuildPlatform task of its preset: the
+				// parameters carry the target, so ContentPipeline resolves the "player" representations
+				// and the scene dependencies for that target without activating the matching platform.
+				// The legacy pipeline (BuildPipeline.BuildAssetBundles with an explicit target) recompiled
+				// the player scripts for the target and then reloaded the domain in the middle of the
+				// build: the running async task was destroyed and the build stayed frozen forever.
 				var parameters = new BundleBuildParameters(
 					buildTarget,
 					BuildPipeline.GetBuildTargetGroup(buildTarget),
@@ -874,7 +894,7 @@ namespace Nox.Worlds.Pipeline {
 					return false;
 				}
 
-				// Le pipeline ne signale pas toujours un bundle manquant : on vérifie ce qui a été écrit
+				// The pipeline does not always report a missing bundle: check what was written
 				foreach (var bundle in assetBundleBuilds) {
 					var bundlePath = Path.Combine(outputPath, bundle.assetBundleName);
 

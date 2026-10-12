@@ -1,7 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.Worlds.Runtime.Network;
 using Nox.Worlds.Pipeline;
@@ -109,8 +109,8 @@ namespace Nox.Worlds.Runtime.Editor {
 				return null;
 			}
 
-			// Une recharge de scène pendant les attentes détruit le descriptor capturé au début : on
-			// récupère celui qui est vivant avant d'y écrire (sinon MissingReferenceException).
+			// A scene reload during the waits destroys the descriptor captured at the start: fetch the
+			// live one before writing to it (otherwise MissingReferenceException).
 			var target = WorldDescriptorHelper.Live(descriptor);
 
 			if (target) {
@@ -207,7 +207,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 				var server   = _world.Server;
 				var assetRef = _world.Id.ToString();
-				var engine   = Constants.CurrentEngine;
+				var engine   = EngineExtensions.CurrentEngine;
 				var release  = await FetchRelease(assets, server, assetRef, version);
 
 				var strictVersionChecking = config.Get("sdk.strict_version", true);
@@ -231,15 +231,15 @@ namespace Nox.Worlds.Runtime.Editor {
 					return;
 				}
 
-				// Le descriptor a pu être détruit par une recharge de scène pendant les attentes ci-dessus
+				// The descriptor may have been destroyed by a scene reload during the waits above
 				var live = WorldDescriptorHelper.Live(descriptor);
 
 				if (live) {
 					live.publishVersion = version;
 					EditorUtility.SetDirty(live);
 
-					// Le bundle est construit par le Scriptable Build Pipeline, qui refuse de tourner tant
-					// qu'une scène chargée a des modifications non écrites : on écrit la scène maintenant.
+					// The bundle is built by the Scriptable Build Pipeline, which refuses to run while a
+					// loaded scene has unsaved changes: save the scene now.
 					if (!WorldDescriptorHelper.SaveScene(live)) {
 						HideBuildProgress();
 						ShowResultDialog(false, "The world scene has unsaved changes and could not be saved. Save it and publish again.");
@@ -259,7 +259,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 				var buildResult = await Builder.Build(buildData);
 
-				// Le build a pu recharger les scènes : on repart du descriptor vivant avant d'y écrire
+				// The build may have reloaded the scenes: start from the live descriptor before writing to it
 				WorldDescriptorHelper.Rebind();
 				descriptor = WorldDescriptorHelper.CurrentWorld ?? descriptor;
 
@@ -269,7 +269,7 @@ namespace Nox.Worlds.Runtime.Editor {
 					return;
 				}
 
-				// Le build rapporte chaque variant avec sa plateforme : plus d'indexation par position
+				// The build reports each variant with its platform: no more indexing by position
 				var bundles = buildResult.Outputs.ToDictionary(output => output.Platform, output => output.Path);
 
 				if (bundles.Count != targets.Length) {
@@ -304,6 +304,21 @@ namespace Nox.Worlds.Runtime.Editor {
 					return;
 				}
 
+				// The instance declares, per asset type, the attributes every file must carry (`required`)
+				// and the combinations that must stay unique within a release (`unique`). They are read
+				// after the build so the checks run before the first slot is reserved.
+				ShowBuildProgress(0.79f, "Checking the upload rules...");
+
+				var rules = await assets.FetchRules(server, Endpoint);
+
+				if (rules == null)
+					Logger.LogWarning("Could not read the instance upload rules; the server will still enforce them.");
+
+				var existingFiles = await assets.FetchFiles(server, Endpoint, assetRef, release.Name);
+
+				if (existingFiles == null)
+					Logger.LogWarning("Could not read the release files; an existing variant may not be replaced.");
+
 				var span      = 0.15f / targets.Length;
 				var published = new string[targets.Length];
 
@@ -322,6 +337,8 @@ namespace Nox.Worlds.Runtime.Editor {
 						targets[i],
 						bundlePath,
 						engine,
+						rules,
+						existingFiles,
 						0.8f + (span * i),
 						span
 					);
@@ -335,8 +352,8 @@ namespace Nox.Worlds.Runtime.Editor {
 					published[i] = targets[i].GetPlatformName();
 				}
 
-				// La version est réappliquée sur le descriptor vivant : si le build a rechargé la scène
-				// depuis le disque, la valeur en mémoire peut être celle d'avant le build.
+				// The version is reapplied to the live descriptor: if the build reloaded the scene from
+				// disk, the in-memory value may be the one from before the build.
 				if (descriptor) {
 					descriptor.publishVersion = version;
 					EditorUtility.SetDirty(descriptor);
@@ -373,6 +390,8 @@ namespace Nox.Worlds.Runtime.Editor {
 			Platform platform,
 			string filePath,
 			Engine engine,
+			IAssetUploadRules rules,
+			IAssetFile[] existingFiles,
 			float progress,
 			float span
 		) {
@@ -381,23 +400,48 @@ namespace Nox.Worlds.Runtime.Editor {
 			var sizeMb = length / (1024f * 1024f);
 			var start  = progress;
 
-			// Découpage du variant : hash, envoi, traitement serveur
+			// Variant breakdown: hash, upload, server processing
 			var hashEnd   = start + (span * 0.20f);
 			var uploadEnd = start + (span * 0.80f);
 
-			// Files are immutable: re-publishing the same version replaces the variant.
-			var previous = release.BestFile(platform, engine);
+			// Attributes declared with the slot: the server matches files by platform+engine.
+			var attributes = new[] {
+				new AssetAttribute("platform", name),
+				new AssetAttribute("engine", engine.GetEngineName())
+			};
 
-			if (previous != null) {
-				ShowBuildProgress(start, $"Replacing the existing {name} variant...");
+			// `required` rules: a slot omitting one of them is refused before any byte is sent.
+			var missing = rules == null ? Array.Empty<string>() : rules.MissingRequired(attributes);
 
-				if (string.IsNullOrEmpty(previous.Name)
-					|| !await assets.DeleteFile(server, Endpoint, assetRef, release.Name, previous.Name))
-					Logger.LogWarning($"Could not remove the previous '{previous.Name}' variant of version {release.Name}.");
+			if (missing.Length > 0)
+				return $"The release requires {string.Join(", ", missing)} on every file, but the {name} variant does not declare it.";
+
+			// Files are immutable: re-publishing the same version replaces the variant. The instance's
+			// `unique` rules resolve the same way — every conflicting combination must be removed
+			// before the new slot is reserved, otherwise the server refuses the reservation (400).
+			var toRemove = new List<IAssetFile>();
+
+			if (existingFiles != null)
+				foreach (var conflict in existingFiles.UniqueConflicts(rules, attributes))
+					if (!toRemove.Contains(conflict))
+						toRemove.Add(conflict);
+
+			// Re-publishing replaces the platform variant even when its engine version changed.
+			var previous = existingFiles.BestFile(platform, engine);
+
+			if (previous != null && !toRemove.Contains(previous))
+				toRemove.Add(previous);
+
+			foreach (var file in toRemove) {
+				ShowBuildProgress(start, $"Replacing the existing {file.Name} variant...");
+
+				if (string.IsNullOrEmpty(file.Name)
+					|| !await assets.DeleteFile(server, Endpoint, assetRef, release.Name, file.Name))
+					Logger.LogWarning($"Could not remove the previous '{file.Name}' variant of version {release.Name}.");
 			}
 
-			// Le Content-Hash est exigé par le pipeline : le fichier est haché avant l'envoi, et sans
-			// retour de progression c'est la phase la plus longue qui resterait invisible.
+			// The Content-Hash is required by the pipeline: the file is hashed before upload, and
+			// without progress feedback the longest phase would stay invisible.
 			ShowBuildProgress(start, $"Hashing the {name} bundle ({sizeMb:F1} MB)...");
 
 			var hash = await Hashing.HashFileAsync(
@@ -423,18 +467,15 @@ namespace Nox.Worlds.Runtime.Editor {
 				new AssetFileReservation {
 					Name = Path.GetFileName(filePath),
 					Mime = "application/octet-stream",
-					Attributes = new[] {
-						new AssetAttribute("platform", name),
-						new AssetAttribute("engine", $"{engine.GetEngineName()}:{EngineVersion}")
-					}
+					Attributes = attributes
 				},
 				new AssetUploadOptions {
 					Hash   = AssetHash.Parse(hash),
 					Length = length
 				},
 				(sent, bytes) => {
-					// Certains transports ne rapportent que les octets envoyés : le ratio est alors
-					// reconstruit pour que la barre avance quand même.
+					// Some transports only report the sent bytes: the ratio is then reconstructed so the
+					// bar still advances.
 					if (sent <= 0f && bytes > 0 && length > 0)
 						sent = (float)((double)bytes / length);
 
@@ -476,19 +517,11 @@ namespace Nox.Worlds.Runtime.Editor {
 		private static async UniTask<IAssetRelease> FetchRelease(IAssetsAPI assets, string server, string asset, ushort version)
 			=> await assets.FetchRelease(server, Endpoint, asset, version.ToString());
 
-		/// <summary>Major and minor version of the running engine (<c>6000.4</c>), as stored in the
-		/// <c>engine</c> file attribute.</summary>
-		private static string EngineVersion {
-			get {
-				var version = EngineExtensions.CurrentVersion;
-				return $"{version.Major}.{version.Minor}";
-			}
-		}
-
 		/// <summary>
-		/// Waits for the server to finish analyzing an uploaded file. The pipeline processes
-		/// synchronously on small files, so this usually returns the file as-is; a file still
-		/// pending is polled until it completes, fails, or the deadline is reached.
+		/// Waits for the server to finish analyzing an uploaded file. The upload only receives the
+		/// bytes (the file comes back <c>queued</c>), so the analysis runs out of band: the file is
+		/// polled — honouring <c>refetch_at</c> — until it completes, fails, or the deadline is
+		/// reached.
 		/// </summary>
 		private async UniTask<IAssetFile> WaitForProcessing(
 			IAssetsAPI assets,
@@ -502,7 +535,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			var deadline = DateTime.UtcNow.AddSeconds(timeoutSeconds);
 			var current  = file;
 
-			while (current?.Status is { Status: AssetState.Queued or AssetState.Processing }) {
+			while (current?.Status != null && current.Status.Status.IsPending()) {
 				if (DateTime.UtcNow >= deadline) {
 					Logger.LogError($"Asset processing timed out for {asset}/{release}/{current.Name}.");
 					return null;
@@ -512,13 +545,16 @@ namespace Nox.Worlds.Runtime.Editor {
 					? (current.RefetchAt - DateTime.UtcNow).TotalSeconds
 					: 2d;
 
-				ShowBuildProgress(progress, $"Processing asset... {current.Status.Progress}%");
+				ShowBuildProgress(progress, $"Processing asset... {DescribeStatus(current.Status)}");
 				await UniTask.Delay(TimeSpan.FromSeconds(Math.Clamp(delay, 0.5d, 30d)));
 
-				if (string.IsNullOrEmpty(current.Name))
-					return current;
+				// The status route addresses the file by its numeric id, not by its name.
+				if (current.Id == 0) {
+					Logger.LogError($"No file id available to poll the status of {asset}/{release}/{current.Name}.");
+					return null;
+				}
 
-				current = await assets.FetchFile(server, Endpoint, asset, release, current.Name);
+				current = await assets.FetchFile(server, Endpoint, asset, release, current.Id.ToString());
 
 				if (current == null) {
 					Logger.LogError($"Failed to read the status of {asset}/{release}/{file.Name}.");
@@ -528,6 +564,20 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			Logger.Log($"Asset processing completed: {current?.Status?.Status} ({current?.Size ?? 0} bytes).");
 			return current;
+		}
+
+		/// <summary>
+		/// Human-readable detail of a pending status: the analyzer counter when it can be estimated
+		/// (<c>45/227</c>), otherwise the server message, otherwise a generic wait.
+		/// </summary>
+		private static string DescribeStatus(IAssetStatus status) {
+			if (status?.Progress is { Total: > 0 } progress)
+				return $"{progress.Current}/{progress.Total}";
+
+			if (!string.IsNullOrEmpty(status?.Message))
+				return status.Message;
+
+			return "waiting for the analysis";
 		}
 
 		private async UniTask OnDetectVersionAsync() {
@@ -563,7 +613,7 @@ namespace Nox.Worlds.Runtime.Editor {
 
 			HideBuildProgress();
 
-			// La détection fait un aller-retour réseau : le descriptor peut avoir été rechargé entre-temps
+			// Detection does a network round-trip: the descriptor may have been reloaded meanwhile
 			var live = WorldDescriptorHelper.Live(descriptor);
 
 			if (live) {
