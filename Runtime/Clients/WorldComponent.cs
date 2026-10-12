@@ -119,10 +119,11 @@ namespace Nox.Worlds.Runtime.Clients {
 			var url = world.BestImage(1f)?.Url;   // square card slot
 
 			if (string.IsNullOrEmpty(url)) {
+				// No banner at all: fall back to the placeholder instead of hiding both slots.
 				banner.sprite = null;
 				_bannerNetworkImage.Url = null;
 				withBanner.SetActive(false);
-				withoutBanner.SetActive(false);
+				withoutBanner.SetActive(true);
 				return;
 			}
 
