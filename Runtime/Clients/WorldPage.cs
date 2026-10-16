@@ -11,7 +11,7 @@ using Nox.Sessions;
 using Nox.UI;
 using Nox.Users;
 using UnityEngine;
-using Cache = Nox.Worlds.Runtime.Caching.Cache;
+using CacheDownload = Nox.Worlds.Runtime.Caching.Cache;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.Clients {
@@ -229,7 +229,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		public bool InCache()
 			=> Asset != null && Main.Instance.Cache.Has(Asset.CacheKey());
 
-		private Cache GetDownload()
+		private CacheDownload GetDownload()
 			=> Asset != null
 				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.CacheKey())
 				: null;
