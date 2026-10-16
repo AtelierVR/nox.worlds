@@ -9,7 +9,7 @@ namespace Nox.CCK.Worlds {
 
 		public const string PasswordQuery = "p";
 
-		public const ushort DefaultVersion = ushort.MaxValue;
+		public const ushort DefaultVersion = ushort.MinValue;
 
 		public static ushort GetVersion(this Identifier identifier)
 			=> identifier.IsValid()
