@@ -33,6 +33,11 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			foreach (var listener in instance.GetComponentsInChildren<AudioListener>(true))
 				listener.Destroy();
 
+			// The world volume lives on the mixer track, not on the sources: re-apply it every time an
+			// instance (re)routes its sources, otherwise they play at the mixer default (100%) until
+			// the user changes the setting. Apply() also resolves the mixer if it was not loaded yet.
+			Main.WorldRegister.Apply();
+
 			// Apply the world volume channel to any AudioSource in / under this instance.
 			foreach (var source in instance.GetComponentsInChildren<AudioSource>(true)) 
 				source.outputAudioMixerGroup = Main.WorldRegister.MixerGroup;
