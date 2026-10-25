@@ -6,7 +6,7 @@ using Nox.Worlds.Runtime.Clients;
 
 namespace Nox.Worlds.Runtime.Search {
 	public class SearchData : IResultData {
-		public Network.World Reference;
+		public Network.WorldAsset Reference;
 
 		public int Id
 			=> Reference.Identifier.GetHashCode();

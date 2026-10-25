@@ -5,6 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using Nox.CCK.Convertors;
+using Nox.CCK.Network;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
@@ -21,7 +22,7 @@ namespace Nox.Worlds.Runtime.Network {
 	/// </summary>
 	public class Network {
 		/// <summary>Invoked when a world is fetched from the server.</summary>
-		private readonly UnityEvent<World> _fetchEvent = new();
+		private readonly UnityEvent<WorldAsset> _fetchEvent = new();
 
 		/// <summary>The worlds collection served by the node.</summary>
 		public static AssetEndpoint Endpoint
@@ -31,7 +32,7 @@ namespace Nox.Worlds.Runtime.Network {
 		private static IAssetsAPI Assets
 			=> Main.AssetsAPI;
 
-		private void InvokeFetch(World world) {
+		private void InvokeFetch(WorldAsset world) {
 			if (world == null)
 				return;
 			_fetchEvent.Invoke(world);
@@ -61,7 +62,7 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="ide"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<World> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
+		public async UniTask<WorldAsset> Fetch(Identifier ide, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
 				Logger.LogError($"Cannot fetch world {ide} from {address}");
@@ -75,7 +76,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var world = await assets.Fetch<World>(address, Endpoint, id, token: cancellationToken);
+			var world = await assets.Fetch<WorldAsset>(address, Endpoint, id, token: cancellationToken);
 
 			if (world == null)
 				Logger.LogError($"Failed to fetch world {ide} from {address}");
@@ -103,7 +104,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var response = await assets.Search<AssetSearchResponse<World>>(
+			var response = await assets.Search<AssetSearchResponse<WorldAsset>>(
 				address,
 				Endpoint,
 				ToAssetSearchRequest(data),
@@ -133,7 +134,7 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="from"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<World> Create(WorldCreateRequest data, string from, CancellationToken cancellationToken = default) {
+		public async UniTask<WorldAsset> Create(WorldCreateRequest data, string from, CancellationToken cancellationToken = default) {
 			var address = from ?? Main.UserAPI?.Current?.Server;
 			if (string.IsNullOrEmpty(address)) {
 				Logger.LogError("Cannot create world: no server address provided.");
@@ -147,7 +148,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var world = await assets.Create<World>(address, Endpoint, data, cancellationToken);
+			var world = await assets.Create<WorldAsset>(address, Endpoint, data, cancellationToken);
 
 			if (world == null)
 				Logger.LogError($"Failed to create world {address}");
@@ -163,7 +164,7 @@ namespace Nox.Worlds.Runtime.Network {
 		/// <param name="form"></param>
 		/// <param name="cancellationToken"></param>
 		/// <returns></returns>
-		public async UniTask<World> Update(Identifier ide, WorldUpdateRequest form, CancellationToken cancellationToken = default) {
+		public async UniTask<WorldAsset> Update(Identifier ide, WorldUpdateRequest form, CancellationToken cancellationToken = default) {
 			var (id, address) = Optimize(ide);
 			if (address == Identifier.LOCAL_SERVER) {
 				Logger.LogError($"Cannot update world {ide} from {address}");
@@ -177,7 +178,7 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var world = await assets.Update<World>(address, Endpoint, id, form, cancellationToken);
+			var world = await assets.Update<WorldAsset>(address, Endpoint, id, form, cancellationToken);
 
 			if (world == null)
 				Logger.LogError($"Failed to update world {ide} from {address}");
@@ -274,13 +275,55 @@ namespace Nox.Worlds.Runtime.Network {
 			var files      = await assets.FetchFiles(address, Endpoint, id, releaseRef, cancellationToken);
 			var file       = files.BestFile(PlatformExtensions.CurrentPlatform, EngineExtensions.CurrentEngine);
 
-			if (file == null)
+			if (file == null) {
 				Logger.LogError(
 					$"No compatible bundle for world {ide}: release {releaseRef} has no file for "
 					+ $"{PlatformExtensions.CurrentPlatform.GetPlatformName()} on {EngineExtensions.CurrentEngine.GetEngineName()}."
 				);
+				return null;
+			}
 
 			return file;
+		}
+
+		/// <summary>
+		/// Polls the dedicated file status endpoint
+		/// (<c>GET …/releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
+		/// what a wait loop needs: the status and the <c>refetch_at</c> cadence.
+		/// <para>
+		/// The release is resolved again, so a caller only needs the identifier and the file it is
+		/// loading.
+		/// </para>
+		/// </summary>
+		/// <returns>The snapshot, or <c>null</c> when the status could not be read.</returns>
+		public async UniTask<IAssetStatusSnapshot> FetchStatus(Identifier ide, IAssetFile file, CancellationToken token = default) {
+			if (file == null)
+				return null;
+
+			var (id, address) = Optimize(ide);
+			var assets        = Assets;
+
+			if (assets == null) {
+				Logger.LogError("Cannot refetch the world bundle status: the asset pipeline is not available.");
+				return null;
+			}
+
+			var release = await ResolveRelease(ide, token);
+
+			if (release == null)
+				return null;
+
+			var releaseRef = string.IsNullOrEmpty(release.Name) 
+				? release.Id.ToString() 
+				: release.Name;
+			var reference  = file.Id > 0 
+				? file.Id.ToString() 
+				: file.Name;
+			var slot       = await assets.FetchFile(address, Endpoint, id, releaseRef, reference, token);
+
+			return slot != null 
+				? new AssetStatusSnapshot(slot.Status, slot.RefetchAt) 
+				: null;
 		}
 
 		/// <summary>

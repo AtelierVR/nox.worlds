@@ -16,7 +16,7 @@ namespace Nox.Worlds.Runtime.Network {
 		public ISearchRequest Request;
 
 		[JsonProperty("items")]
-		public World[] Items { get; private set; } = Array.Empty<World>();
+		public WorldAsset[] Items { get; private set; } = Array.Empty<WorldAsset>();
 
 		[JsonProperty("total")]
 		public uint Total { get; private set; }
@@ -43,7 +43,7 @@ namespace Nox.Worlds.Runtime.Network {
 			=> await Previous();
 
 		/// <summary>Takes over the page returned by the asset pipeline.</summary>
-		public static SearchResponse From(AssetSearchResponse<World> response)
+		public static SearchResponse From(AssetSearchResponse<WorldAsset> response)
 			=> response == null
 				? null
 				: new SearchResponse {
