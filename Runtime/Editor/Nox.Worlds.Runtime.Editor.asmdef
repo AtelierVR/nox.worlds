@@ -17,7 +17,8 @@
         "Nox.UI",
         "Nox.Editor.Panel",
         "Nox.Controllers",
-        "UniTask"
+        "UniTask",
+        "Nox.Assets.Editor"
     ],
     "includePlatforms": [
         "Editor"

@@ -10,7 +10,6 @@ namespace Nox.Worlds.Runtime.Editor {
 		static internal IEditorModCoreAPI CoreAPI;
 
 		private LanguagePack _lang;
-		private EventSubscription[] _events = Array.Empty<EventSubscription>();
 
 		public static IUserAPI UserAPI
 			=> CoreAPI.ModAPI
@@ -21,17 +20,10 @@ namespace Nox.Worlds.Runtime.Editor {
 			CoreAPI = api;
 			_lang = api.AssetAPI.GetAsset<LanguagePack>("lang.asset");
 			LanguageManager.AddPack(_lang);
-			_events = new[] {
-				api.EventAPI.Subscribe("user_updated", UserConnectedNotification.OnUserUpdated),
-			};
-			UserConnectedNotification.OnUserUpdated(UserAPI.Current);
 		}
 
 		public void OnDisposeEditor() {
 			LanguageManager.RemovePack(_lang);
-			foreach (var e in _events)
-				CoreAPI.EventAPI.Unsubscribe(e);
-			_events = Array.Empty<EventSubscription>();
 			_lang = null;
 			CoreAPI = null;
 		}

@@ -1,3 +1,4 @@
+using Nox.Assets.Editor;
 using UnityEditor;
 
 namespace Nox.Worlds.Runtime.Editor {
@@ -9,16 +10,16 @@ namespace Nox.Worlds.Runtime.Editor {
 			=> EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
 		private static void OnPlayModeStateChanged(PlayModeStateChange state) {
-			if (state == PlayModeStateChange.ExitingEditMode && !WorldNotificationHelper.Has(NotificationUid))
-				WorldNotificationHelper.Add(
-					new WorldNotification(
+			if (state == PlayModeStateChange.ExitingEditMode && !AssetNotificationHelper.Has(NotificationUid))
+				AssetNotificationHelper.Add(
+					new AssetNotification(
 						NotificationUid,
-						NotificationType.Warning,
+						AssetNotificationType.Warning,
 						new[] { "world.editor.notification.play_mode" }
 					)
 				);
 			else if (state == PlayModeStateChange.EnteredEditMode)
-				WorldNotificationHelper.Remove(NotificationUid);
+				AssetNotificationHelper.Remove(NotificationUid);
 		}
 	}
 }

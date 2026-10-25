@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Nox.Assets.Editor;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
 using UnityEditor;
@@ -26,7 +27,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			=> OnWorldSelected(WorldDescriptorHelper.CurrentWorld);
 
 		private static void OnWorldSelected(WorldDescriptor world) {
-			WorldNotificationHelper.Remove(NotificationUid);
+			AssetNotificationHelper.Remove(NotificationUid);
 			if (!world)
 				return;
 
@@ -34,11 +35,11 @@ namespace Nox.Worlds.Runtime.Editor {
 			if (cameras.Length == 0)
 				return;
 
-			WorldNotificationHelper.Set(new WorldNotification(
+			AssetNotificationHelper.Set(new AssetNotification(
 				NotificationUid,
-				NotificationType.Warning,
+				AssetNotificationType.Warning,
 				new[] { "world.editor.notification.cameras", cameras.Length.ToString() },
-				new WorldAction[] {
+				new AssetNotificationAction[] {
 					new(
 						new[] { "world.editor.notification.cameras.action.untag" },
 						() => {

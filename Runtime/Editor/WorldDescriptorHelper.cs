@@ -45,6 +45,21 @@ namespace Nox.Worlds.Runtime.Editor {
 		}
 	}
 
+	/// <summary>
+	/// Worlds that can be published (alive, active, not a working copy): the selector of the
+	/// publisher lists them.
+	/// </summary>
+	public static WorldDescriptor[] Candidates() {
+		try {
+			return Object.FindObjectsByType<WorldDescriptor>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+				.Where(world => world && world.gameObject.activeInHierarchy)
+				.Where(world => !IsWorkingCopy(world))
+				.ToArray();
+		} catch {
+			return Array.Empty<WorldDescriptor>();
+		}
+	}
+
 		/// <summary>
 		/// Re-résout le world courant après une opération qui a pu recharger les scènes ou détruire le
 		/// descriptor (build, refresh) et prévient les listeners si nécessaire. Sans effet quand la
