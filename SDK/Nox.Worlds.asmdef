@@ -6,7 +6,8 @@
         "UniTask",
         "Nox.Servers",
         "Nox.Avatars.Pipeline",
-        "Nox.Network"
+        "Nox.Network",
+        "Nox.Assets", "Nox.Assets.CCK"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

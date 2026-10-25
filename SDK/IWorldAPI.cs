@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Nox.Assets;
 using Nox.CCK.Utils;
 using Nox.Network.Assets;
 using UnityEngine;
@@ -116,14 +117,14 @@ namespace Nox.Worlds {
 		public UniTask<bool> AddImage(Identifier identifier, Texture2D texture, Action<float> onProgress = null);
 
 		/// <summary>
-		/// Downloads a file for a world asset.
+		/// Downloads a cache entry into the shared cache.
+		/// <para>
+		/// <see cref="IdentifierCache"/> describes the bundle of a world: the download then waits
+		/// while the file is still analyzed (<c>409 ANALYSIS_PENDING</c>) by refetching its status.
+		/// <see cref="UrlCache"/> is a raw URL, downloaded as-is.
+		/// </para>
 		/// </summary>
-		/// <param name="url">URL of the file to download.</param>
-		/// <param name="hash">Expected hash of the file, used for integrity verification.</param>
-		/// <param name="progress"></param>
-		/// <param name="token">Cancellation token to cancel the download operation.</param>
-		/// <returns></returns>
-		public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default);
+		public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default);
 
 		/// <summary>
 		/// Gets an existing download from the cache.

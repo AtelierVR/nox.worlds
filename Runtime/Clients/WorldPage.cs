@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Utils;
+using Nox.Assets;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Worlds;
 using Nox.Network.Assets;
@@ -11,7 +12,7 @@ using Nox.Sessions;
 using Nox.UI;
 using Nox.Users;
 using UnityEngine;
-using CacheDownload = Nox.Worlds.Runtime.Caching.Cache;
+using CacheDownload = Nox.Assets.ICaching;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.Clients {
@@ -163,7 +164,7 @@ namespace Nox.Worlds.Runtime.Clients {
 			}
 
 			var cache = Main.Instance
-				.DownloadToCache(Asset.Url, Asset.CacheKey());
+				.DownloadToCache(new IdentifierCache(_identifier, Asset));
 
 			cache.Start().Forget();
 		}
@@ -184,9 +185,9 @@ namespace Nox.Worlds.Runtime.Clients {
 
 		public void OnOpen(IPage lastPage) {
 			_events = new[] {
-				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_added", OnCacheUpdate),
-				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_download", OnCacheUpdate),
-				Main.Instance.CoreAPI.EventAPI.Subscribe("world_cache_removed", OnCacheUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_added", OnCacheUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_download", OnCacheUpdate),
+				Main.Instance.CoreAPI.EventAPI.Subscribe("asset_cache_removed", OnCacheUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("session_added", OnSessionUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("session_removed", OnSessionUpdate),
 				Main.Instance.CoreAPI.EventAPI.Subscribe("session_state_changed", OnSessionUpdate),
@@ -227,11 +228,11 @@ namespace Nox.Worlds.Runtime.Clients {
 		}
 
 		public bool InCache()
-			=> Asset != null && Main.Instance.Cache.Has(Asset.CacheKey());
+			=> Asset != null && Main.Instance.HasInCache(Asset.CacheKey());
 
-		private CacheDownload GetDownload()
+		private ICaching GetDownload()
 			=> Asset != null
-				? Main.Instance.Cache.GetDownload(Asset.Url, Asset.CacheKey())
+				? Main.Instance.GetDownload(Asset.Url, Asset.CacheKey())
 				: null;
 
 		public (bool, float) IsDownloading() {

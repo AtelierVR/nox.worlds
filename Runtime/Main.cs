@@ -9,6 +9,7 @@ using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Events;
 using Nox.CCK.Mods.Initializers;
 using Nox.CCK.Utils;
+using Nox.Assets;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Worlds;
 using Nox.Network;
@@ -17,7 +18,6 @@ using Nox.Search;
 using Nox.Sessions;
 using Nox.Tables;
 using Nox.Users;
-using Nox.Worlds.Runtime.Caching;
 using Nox.Worlds.Runtime.Network;
 using Nox.Worlds.Runtime.SceneGroups;
 using UnityEngine;
@@ -32,7 +32,6 @@ namespace Nox.Worlds.Runtime {
 		public static Main Instance;
 		public IMainModCoreAPI CoreAPI;
 		public Network.Network Network;
-		internal CacheManager Cache;
 		private Search.Search _search;
 		private LanguagePack _lang;
 		internal SceneGroupManager Manager;
@@ -59,8 +58,19 @@ namespace Nox.Worlds.Runtime {
 			=> Instance == null
 				? null
 				: Instance.CoreAPI.ModAPI
-					.GetMod("network")
+					.GetMod("assets")
 					?.GetInstance<IAssetsAPI>();
+
+		/// <summary>
+		/// Shared asset cache. Owned by the <c>assets</c> mod so every asset kind (avatars, worlds,
+		/// mods…) uses the same files, progress and events.
+		/// </summary>
+		public static IAssetCacheAPI AssetsCache
+			=> Instance == null
+				? null
+				: Instance.CoreAPI.ModAPI
+					.GetMod("assets")
+					?.GetInstance<IAssetCacheAPI>();
 
 		static internal ITableAPI TableAPI
 			=> Instance.CoreAPI.ModAPI
@@ -98,7 +108,6 @@ namespace Nox.Worlds.Runtime {
 
 			Manager = new SceneGroupManager();
 			Network = new Network.Network();
-			Cache   = new CacheManager();
 			_search = new Search.Search();
 
 			// Register world volume channel (depends on "general"), protected from removal
@@ -143,9 +152,7 @@ namespace Nox.Worlds.Runtime {
 			if (Manager != null)
 				await Manager.Dispose();
 			Manager = null;
-			Cache?.Dispose();
 			_search?.Dispose();
-			Cache    = null;
 			_search  = null;
 			Network  = null;
 			CoreAPI  = null;
@@ -227,21 +234,21 @@ namespace Nox.Worlds.Runtime {
 
 		#region Caching
 
-		public ICaching DownloadToCache(string url, string hash = null, UnityAction<float> progress = null, CancellationToken token = default) {
-			var caching = Cache.AddDownload(url, hash, token);
-			if (progress != null)
-				caching.OnProgressChanged.AddListener(progress);
-			return caching;
-		}
+		/// <summary>
+		/// Downloads a cache entry into the shared cache. A <see cref="IdentifierCache"/> entry carries
+		/// the bundle identity, so a file still being analyzed is waited for instead of failing.
+		/// </summary>
+		public ICaching DownloadToCache(ICacheEntry entry, UnityAction<float> progress = null, CancellationToken token = default)
+			=> AssetsCache?.Download(entry, progress, token);
 
 		public ICaching GetDownload(string url, string hash)
-			=> Cache.GetDownload(url, hash);
+			=> AssetsCache?.GetDownload(url, hash);
 
 		public void RemoveFromCache(string hash)
-			=> Cache.Clear(hash);
+			=> AssetsCache?.Clear(hash);
 
 		public bool HasInCache(string hash)
-			=> Cache.Has(hash);
+			=> AssetsCache?.Has(hash) == true;
 
 		#endregion
 
@@ -303,7 +310,7 @@ namespace Nox.Worlds.Runtime {
 			if (!HasInCache(hash)) {
 				CoreAPI.LoggerAPI.LogDebug($"[World] Pre-downloading home world '{identifier}' (hash: {hash})...");
 				try {
-					var download = DownloadToCache(asset.Url, hash: hash);
+					var download = DownloadToCache(new IdentifierCache(identifier, asset));
 					await download.Start();
 				} catch (Exception e) {
 					CoreAPI.LoggerAPI.LogWarning($"[World] Pre-download failed for home world '{identifier}': {e.Message}");
