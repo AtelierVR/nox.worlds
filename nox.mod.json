@@ -84,7 +84,7 @@
       "register": "git+https://github.com/AtelierVR/nox.audio.git"
     },
     {
-      "id": "session",
+      "id": "sessions",
       "type": "depends",
       "version": ">=1.0.0",
       "register": "git+https://github.com/AtelierVR/nox.sessions.git"
@@ -115,7 +115,7 @@
     },
     {
       "type": "after",
-      "id": "session"
+      "id": "sessions"
     }
   ],
   "entrypoints": {

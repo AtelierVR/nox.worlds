@@ -16,7 +16,7 @@
     "Nox.Sessions",
     "Nox.Instances",
     "Nox.Worlds.Pipeline",
-    "Nox.Network", "Nox.Assets", "Nox.Assets.CCK",
+    "Nox.Network", "Nox.Assets", "Nox.CCK.Assets",
     "Nox.Table",
     "Nox.Worlds.Scenes",
     "Nox.CCK.Network",
