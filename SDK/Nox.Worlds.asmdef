@@ -7,7 +7,7 @@
         "Nox.Servers",
         "Nox.Avatars.Pipeline",
         "Nox.Network",
-        "Nox.Assets", "Nox.Assets.CCK"
+        "Nox.Assets", "Nox.CCK.Assets"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

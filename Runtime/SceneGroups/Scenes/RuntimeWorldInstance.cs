@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Utils;
 using UnityEngine.SceneManagement;
@@ -8,16 +7,16 @@ using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 	public class RuntimeWorldInstance : IRuntimeWorldDimension, INoxObject {
-		internal RuntimeWorldGroup   RuntimeWorldGroup;
-		internal Scene               Scene;
-		internal GameObject          Anchor;
-		internal GameObject          Prefab;
+		internal RuntimeWorldGroup RuntimeWorldGroup;
+		internal Scene Scene;
+		internal GameObject Anchor;
+		internal GameObject Prefab;
 		internal List<InstanceScene> Instances = new();
 
 		public RuntimeWorldInstance(RuntimeWorldGroup init, Scene scene, GameObject prefab) {
 			RuntimeWorldGroup = init;
-			Scene             = scene;
-			Prefab            = prefab;
+			Scene = scene;
+			Prefab = prefab;
 		}
 
 		[NoxPublic(NoxAccess.Method)]
@@ -37,7 +36,7 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 				container.GetComponentInChildren<IWorldDescriptor>(false)
 			);
 
-			container.name = $"{GetType().Name}_{instance.GetId()}]";
+			container.name = $"[{GetType().Name}_{instance.GetId()}]";
 
 			if (instance.Descriptor == null) {
 				container.Destroy();
@@ -102,7 +101,7 @@ namespace Nox.Worlds.Runtime.SceneGroups.Scenes {
 			foreach (var instance in Instances)
 				RemoveInstance(instance.GetId());
 			Instances.Clear();
-			Scene             = default;
+			Scene = default;
 			RuntimeWorldGroup = null;
 		}
 

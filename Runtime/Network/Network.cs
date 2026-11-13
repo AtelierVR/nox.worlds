@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
+using Nox.Assets;
 using Nox.CCK.Convertors;
-using Nox.CCK.Network;
 using Nox.CCK.Network.Assets;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
@@ -232,9 +232,9 @@ namespace Nox.Worlds.Runtime.Network {
 				return null;
 			}
 
-			var version = ide.GetVersion();
+			var version = ide.GetRelease();
 
-			var release = version == WorldIdentifierExtensions.DefaultVersion
+			var release = AssetIdentifierExtensions.IsPreferredVersion(version)
 				? await assets.FetchPreferredRelease(address, Endpoint, id, cancellationToken)
 				: await assets.FetchRelease(address, Endpoint, id, version.ToString(), false, cancellationToken);
 
@@ -288,7 +288,7 @@ namespace Nox.Worlds.Runtime.Network {
 
 		/// <summary>
 		/// Polls the dedicated file status endpoint
-		/// (<c>GET …/releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
+		/// (<c>GET .../releases/{release}/files/{fileRef}/status</c>, no bytes streamed) and returns
 		/// what a wait loop needs: the status and the <c>refetch_at</c> cadence.
 		/// <para>
 		/// The release is resolved again, so a caller only needs the identifier and the file it is
@@ -313,16 +313,16 @@ namespace Nox.Worlds.Runtime.Network {
 			if (release == null)
 				return null;
 
-			var releaseRef = string.IsNullOrEmpty(release.Name) 
-				? release.Id.ToString() 
+			var releaseRef = string.IsNullOrEmpty(release.Name)
+				? release.Id.ToString()
 				: release.Name;
-			var reference  = file.Id > 0 
-				? file.Id.ToString() 
+			var reference  = file.Id > 0
+				? file.Id.ToString()
 				: file.Name;
 			var slot       = await assets.FetchFile(address, Endpoint, id, releaseRef, reference, token);
 
-			return slot != null 
-				? new AssetStatusSnapshot(slot.Status, slot.RefetchAt) 
+			return slot != null
+				? new AssetStatusSnapshot(slot.Status, slot.RefetchAt)
 				: null;
 		}
 

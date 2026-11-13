@@ -51,7 +51,7 @@ namespace Nox.Worlds.Runtime.Editor {
 	/// </summary>
 	public static WorldDescriptor[] Candidates() {
 		try {
-			return Object.FindObjectsByType<WorldDescriptor>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+			return Object.FindObjectsByType<WorldDescriptor>(FindObjectsInactive.Include)
 				.Where(world => world && world.gameObject.activeInHierarchy)
 				.Where(world => !IsWorkingCopy(world))
 				.ToArray();

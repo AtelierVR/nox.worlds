@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Nox.Assets;
 using Nox.CCK.Convertors;
 using Nox.CCK.Language;
 using Nox.CCK.Network;
@@ -444,9 +445,12 @@ namespace Nox.Worlds.Runtime.Clients {
 				return;
 			}
 
-			var meta = world.Query;
+			var meta = new Dictionary<string, string[]>(world.Query);
 
-			meta.Add("v", new[] { Page.Version.ToString() });
+			if (AssetIdentifierExtensions.IsPreferredVersion(Page.Release))
+				meta.Remove(AssetIdentifierExtensions.RELEASE_QUERY);
+			else
+				meta[AssetIdentifierExtensions.RELEASE_QUERY] = new[] { Page.Release.ToString() };
 
 			world = new Identifier(
 				"w",
@@ -481,7 +485,14 @@ namespace Nox.Worlds.Runtime.Clients {
 		private void OnMakeInstanceClicked() {
 			if (Page?.World == null)
 				return;
-			Client.UiAPI?.SendGoto(Page.MId, "instance_create", Page.World, Page.Version == ushort.MaxValue ? null : Page.Version);
+			Client.UiAPI?.SendGoto(
+				Page.MId,
+				"instance_create",
+				Page.World,
+				AssetIdentifierExtensions.IsPreferredVersion(Page.Release)
+					? null
+					: Page.Release
+			);
 		}
 
 		#endregion

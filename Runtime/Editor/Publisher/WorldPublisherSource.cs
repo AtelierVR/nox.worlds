@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
+using Nox.Assets;
 using Nox.Assets.Editor;
 using Nox.CCK.Convertors;
 using Nox.CCK.Network.Assets;
@@ -27,6 +27,9 @@ namespace Nox.Worlds.Runtime.Editor {
 		/// <summary>Capacity typed by the user, sent with the next update; <c>null</c> until edited.</summary>
 		private uint? _capacity;
 
+		/// <summary>Release picked in the panel, kept when the descriptor cannot be written.</summary>
+		private uint _release;
+
 		public override string   Panel  => "world";
 		public override string   Label  => "World";
 		public override string[] Path   => new[] { "world", "publisher" };
@@ -48,22 +51,38 @@ namespace Nox.Worlds.Runtime.Editor {
 		public override UnityEngine.Object[] Candidates()
 			=> WorldDescriptorHelper.Candidates();
 
+		public override void Initialize(IEditorModCoreAPI api) {
+			base.Initialize(api);
+
+			WorldDescriptorHelper.OnWorldSelected.RemoveListener(OnDescriptorSelected);
+			WorldDescriptorHelper.OnWorldSelected.AddListener(OnDescriptorSelected);
+		}
+
+		private void OnDescriptorSelected(WorldDescriptor world)
+			=> RaiseSelectionChanged(world);
+
 		public override string Describe(UnityEngine.Object candidate)
 			=> candidate is WorldDescriptor descriptor && !string.IsNullOrEmpty(descriptor.gameObject.scene.name)
 				? $"{descriptor.name} ({descriptor.gameObject.scene.name})"
 				: base.Describe(candidate);
 
-		// --- version -----------------------------------------------------------------------
+		// --- release -----------------------------------------------------------------------
 
-		public override ushort Version {
-			get => (ushort)(WorldDescriptorHelper.CurrentWorld?.publishVersion ?? 0);
+		public override uint Release {
+			get {
+				var pinned = WorldDescriptorHelper.CurrentWorld?.Attached.GetRelease() ?? 0;
+
+				return pinned != 0 ? pinned : _release;
+			}
 			set {
+				_release = value;
+
 				var live = WorldDescriptorHelper.Live(WorldDescriptorHelper.CurrentWorld);
 
 				if (!live)
 					return;
 
-				live.publishVersion = value;
+				live.Attached = live.Attached.WithRelease(value);
 				EditorUtility.SetDirty(live);
 			}
 		}
@@ -107,8 +126,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			var live = WorldDescriptorHelper.Live(descriptor);
 
 			if (live) {
-				live.publishId     = asset.Id;
-				live.publishServer = asset.Server;
+				live.Attached = new Identifier(null, asset.Id, null, asset.Server);
 				EditorUtility.SetDirty(live);
 			}
 
@@ -124,17 +142,17 @@ namespace Nox.Worlds.Runtime.Editor {
 			var descriptor = WorldDescriptorHelper.CurrentWorld;
 			var assets     = Nox.Assets.Editor.Editor.Pipeline;
 
-			if (descriptor == null || assets == null || descriptor.publishId == 0)
+			if (descriptor == null || assets == null || descriptor.Attached.NumericId == 0)
 				return false;
 
-			var server = !string.IsNullOrEmpty(descriptor.publishServer)
-				? descriptor.publishServer
-				: UserServer();
+			var server = descriptor.Attached.IsLocal()
+				? UserServer()
+				: descriptor.Attached.Server;
 
 			if (string.IsNullOrEmpty(server))
 				return false;
 
-			var asset = await assets.Fetch<WorldAsset>(server, Endpoint, descriptor.publishId.ToString());
+			var asset = await assets.Fetch<WorldAsset>(server, Endpoint, descriptor.Attached.StringId);
 
 			if (asset == null)
 				return false;
@@ -178,8 +196,7 @@ namespace Nox.Worlds.Runtime.Editor {
 			var live = WorldDescriptorHelper.Live(WorldDescriptorHelper.CurrentWorld);
 
 			if (live) {
-				live.publishId     = 0;
-				live.publishServer = string.Empty;
+				live.Attached = Identifier.Invalid;
 				EditorUtility.SetDirty(live);
 			}
 
@@ -266,13 +283,13 @@ namespace Nox.Worlds.Runtime.Editor {
 		/// Writes the version to the live descriptor and saves the scene: the Scriptable Build Pipeline
 		/// refuses to run while a loaded scene has unsaved changes.
 		/// </summary>
-		private static string SaveBeforeBuild(AssetPublishRequest request, ushort version) {
+		private static string SaveBeforeBuild(AssetPublishRequest request, uint release) {
 			var live = WorldDescriptorHelper.Live(request?.State as WorldDescriptor);
 
 			if (!live)
 				return null;
 
-			live.publishVersion = version;
+			live.Attached = live.Attached.WithRelease(release);
 			EditorUtility.SetDirty(live);
 
 			return WorldDescriptorHelper.SaveScene(live)

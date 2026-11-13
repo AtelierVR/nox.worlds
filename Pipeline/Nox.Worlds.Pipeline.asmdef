@@ -6,6 +6,7 @@
     "UniTask",
     "Nox.Worlds",
     "Nox.CCK.Worlds",
+    "Nox.CCK.Assets",
     "Unity.ScriptableBuildPipeline",
     "Unity.ScriptableBuildPipeline.Editor",
     "Nox.Worlds.Scenes"

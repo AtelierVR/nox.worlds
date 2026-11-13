@@ -30,6 +30,8 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 			progress?.Invoke(0.0f);
 
 			var prefab = new GameObject($"[Reference] {nameof(T)}");
+			prefab.AddComponent<Anchor>().Add("world");
+
 			SceneManager.MoveGameObjectToScene(prefab, scene);
 			foreach (var root in scene.GetRootGameObjects())
 				root.transform.SetParent(prefab.transform);
@@ -58,8 +60,7 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 
 			descriptor.FindModules();
 
-
-			if (WorldSetup.OnCheckRequest != null && !WorldSetup.OnCheckRequest(descriptor))
+			if (OnCheckRequest != null && !OnCheckRequest(descriptor))
 				return new PrepareResult<T> {
 					Success = false,
 					Error = "A mod asked to cancel the world preparation."

@@ -1,65 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Nox.Assets;
 using Nox.CCK.Build;
-using Nox.CCK.Utils;
 using Nox.Worlds;
-using UnityEngine;
 
 namespace Nox.CCK.Worlds {
-	public class WorldDescriptor : MonoBehaviour, IWorldDescriptor, ICompilable {
-		public GameObject Anchor
-			=> gameObject;
-
-		#region Publisher
-
-		#if UNITY_EDITOR
-		/// <summary>
-		/// Clés (<see cref="Platform.Key"/>) des plateformes ciblées, sérialisées : une par variant
-		/// construit et publié.
-		/// </summary>
-		public string[] targetPlatforms = Array.Empty<string>();
-
-		/// <summary>
-		/// Plateformes que le world publie : un variant (build + fichier) par entrée, dans l'ordre de
-		/// <see cref="PlatformExtensions.All"/>. Vide = plateforme courante, voir <see cref="Compile"/>.
-		/// </summary>
-		public Platform[] Targets {
-			get => (targetPlatforms ?? Array.Empty<string>())
-				.Select(key => key.GetPlatformFromName())
-				.Where(platform => platform != Platform.None)
-				.Distinct()
-				.OrderBy(platform => Array.IndexOf(PlatformExtensions.All, platform))
-				.ToArray();
-			set => targetPlatforms = (value ?? Array.Empty<Platform>())
-				.Where(platform => platform != Platform.None)
-				.Distinct()
-				.OrderBy(platform => Array.IndexOf(PlatformExtensions.All, platform))
-				.Select(platform => platform.Key)
-				.ToArray();
-		}
-
-		public uint     publishId;
-		public string   publishServer;
-		public uint     publishVersion;
-		#endif
-
-		#endregion
-
+	public class WorldDescriptor : AssetDescriptor<IWorldModule>, IWorldDescriptor, ICompilable {
 		#region Build
 
 		#if UNITY_EDITOR
-		public bool isCompiled;
-
-		public int CompileOrder
-			=> 9999;
-
 		// ReSharper disable Unity.PerformanceAnalysis
-		public void Compile() {
-			if (Targets.Length == 0)
-				Targets = new[] { PlatformExtensions.CurrentPlatform };
-			Modules    = FindModules(this);
-			isCompiled = true;
+		public override void Compile() {
+			base.Compile();
+			Modules = FindModules(this);
 		}
 		#endif
 
@@ -76,13 +30,7 @@ namespace Nox.CCK.Worlds {
 		public UnityEngine.Object[] detected = Array.Empty<UnityEngine.Object>();
 		#endif
 
-		public IWorldModule[] Modules = Array.Empty<IWorldModule>();
-
-		public T[] GetModules<T>() where T : IWorldModule
-			=> Modules.OfType<T>().ToArray();
-
-		public IWorldModule[] GetModules()
-			=> Modules;
+		public override IWorldModule[] Modules { get; set; } = Array.Empty<IWorldModule>();
 
 		/// <summary>
 		/// Modules du world : ceux du descriptor et de son sous-arbre, puis ceux du reste de sa scène — un
@@ -98,10 +46,14 @@ namespace Nox.CCK.Worlds {
 				// Inclut le GameObject du descriptor lui-même
 				modules.UnionWith(root.GetComponentsInChildren<IWorldModule>(true));
 
-				var scene = root.scene;
-				if (scene.IsValid() && scene.isLoaded)
-					foreach (var sceneRoot in scene.GetRootGameObjects())
-						modules.UnionWith(sceneRoot.GetComponentsInChildren<IWorldModule>(true));
+				if (Utils.Anchor.TryFind(root.transform, "world", out var boundary))
+					modules.UnionWith(boundary.GetComponentsInChildren<IWorldModule>(true));
+				else {
+					var scene = root.scene;
+					if (scene.IsValid() && scene.isLoaded)
+						foreach (var sceneRoot in scene.GetRootGameObjects())
+							modules.UnionWith(sceneRoot.GetComponentsInChildren<IWorldModule>(true));
+				}
 			}
 
 			// La liste sert de graine aux appels suivants : une référence détruite ne doit pas y rester

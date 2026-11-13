@@ -63,7 +63,7 @@ namespace Nox.Worlds.Runtime {
 
 		/// <summary>
 		/// Shared asset cache. Owned by the <c>assets</c> mod so every asset kind (avatars, worlds,
-		/// mods…) uses the same files, progress and events.
+		/// mods...) uses the same files, progress and events.
 		/// </summary>
 		public static IAssetCacheAPI AssetsCache
 			=> Instance == null
@@ -79,22 +79,22 @@ namespace Nox.Worlds.Runtime {
 
 		static internal ISessionAPI SessionAPI
 			=> Instance.CoreAPI.ModAPI
-				.GetMod("session")
+				.GetMod("sessions")
 				?.GetInstance<ISessionAPI>();
 
 		private EventSubscription[] _events;
-	
+
 		static internal IAudioAPI AudioAPI
 			=> Instance.CoreAPI.ModAPI
 				.GetMod("audio")
 				?.GetInstance<IAudioAPI>();
-	
+
 		/// <summary>
 		/// World volume channel. Routes and controls the volume of all worlds' audio
 		/// via the "world" channel (depends on "general").
 		/// </summary>
 		static internal ChannelRegister WorldRegister;
-	
+
 
 		public void OnInitializeMain(IMainModCoreAPI api) {
 			Instance = this;

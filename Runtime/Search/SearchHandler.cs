@@ -7,7 +7,7 @@ using UnityEngine;
 namespace Nox.Worlds.Runtime.Search {
 	public class SearchHandler : IHandler {
 		public string GetId()
-			=> Main.Instance.CoreAPI.ModMetadata.GetId();
+			=> Main.Instance.CoreAPI.ModMetadata.Id;
 
 		public string GetTitleKey()
 			=> "world.search.title";

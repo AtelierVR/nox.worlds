@@ -27,7 +27,7 @@ namespace Nox.Worlds.Runtime.Caching {
 		public static void Delete(string hash)
 			=> Store?.Clear(hash);
 
-		/// <summary>Removes every cached asset (avatars, worlds…), not only the worlds.</summary>
+		/// <summary>Removes every cached asset (avatars, worlds...), not only the worlds.</summary>
 		public static void ClearCache() {
 			var root = Path.Combine(Constants.CachePath, "assets");
 

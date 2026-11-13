@@ -25,10 +25,7 @@ namespace Nox.Worlds.Runtime.Editor {
 		public override VisualElement CreateInspectorGUI() {
 			var root = Resources.Load<VisualTreeAsset>("WorldDescriptorEditor").CloneTree();
 
-			BindField(root, "target", nameof(WorldDescriptor.targetPlatforms));
-			BindField(root, "publishId", nameof(WorldDescriptor.publishId));
-			BindField(root, "publishServer", nameof(WorldDescriptor.publishServer));
-			BindField(root, "publishVersion", nameof(WorldDescriptor.publishVersion));
+			BindField(root, "target", nameof(WorldDescriptor.targets));
 
 			_modules = root.Q<PropertyField>("modules");
 			_modules.RegisterCallback<GeometryChangedEvent>(_ => LockModules());

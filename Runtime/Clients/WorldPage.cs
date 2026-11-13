@@ -12,7 +12,6 @@ using Nox.Sessions;
 using Nox.UI;
 using Nox.Users;
 using UnityEngine;
-using CacheDownload = Nox.Assets.ICaching;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Worlds.Runtime.Clients {
@@ -30,7 +29,7 @@ namespace Nox.Worlds.Runtime.Clients {
 		private Identifier _identifier;
 		public IWorld World;
 		public IAssetFile Asset;
-		public ushort Version = ushort.MaxValue;
+		public uint Release = AssetIdentifierExtensions.DEFAULT_VERSION;
 		private bool _isLoading;
 		private CancellationTokenSource _refreshTokenSource;
 
@@ -78,7 +77,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				_context    = context,
 				_identifier = identifier,
 				World       = null,
-				Version     = identifier.GetVersion(),
+				Release     = identifier.GetRelease(),
 				Asset       = null,
 			};
 			page.Refresh(true).Forget();
@@ -91,7 +90,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				_context    = context,
 				_identifier = world.Identifier,
 				World       = world,
-				Version     = world.Identifier.GetVersion(),
+				Release     = world.Identifier.GetRelease(),
 				Asset       = asset,
 			};
 			if (page.Asset == null)
