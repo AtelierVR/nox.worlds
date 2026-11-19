@@ -87,6 +87,19 @@ namespace Nox.Worlds.Runtime.Editor {
 			}
 		}
 
+		public override Platform[] Platforms {
+			get => WorldDescriptorHelper.CurrentWorld?.Targets ?? Array.Empty<Platform>();
+			set {
+				var live = WorldDescriptorHelper.Live(WorldDescriptorHelper.CurrentWorld);
+
+				if (!live)
+					return;
+
+				live.Targets = value;
+				EditorUtility.SetDirty(live);
+			}
+		}
+
 		// --- attached asset ----------------------------------------------------------------
 
 		public override async UniTask<IAsset> AttachAsync(uint id) {
