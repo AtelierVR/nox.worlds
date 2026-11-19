@@ -382,7 +382,7 @@ namespace Nox.Worlds.Runtime.Clients {
 				return;
 			}
 
-			offlineButton.interactable = true;
+			offlineButton.interactable = Page?.Asset != null;
 			offlineLabel.UpdateText("world.offline.join");
 			SetOfflineIcon("ui:icons/distance.png");
 			SetOfflineProgress(0f);
