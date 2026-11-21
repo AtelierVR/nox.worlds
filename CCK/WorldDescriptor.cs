@@ -46,7 +46,7 @@ namespace Nox.CCK.Worlds {
 				// Inclut le GameObject du descriptor lui-même
 				modules.UnionWith(root.GetComponentsInChildren<IWorldModule>(true));
 
-				if (Utils.Anchor.TryFind(root.transform, "world", out var boundary))
+				if (Utils.Anchor.TryFind(root.transform, WorldPath.WORLD_TAG, out var boundary))
 					modules.UnionWith(boundary.GetComponentsInChildren<IWorldModule>(true));
 				else {
 					var scene = root.scene;

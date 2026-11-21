@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Build;
 using Nox.CCK.Utils;
+using Nox.CCK.Worlds;
 using Nox.Worlds.Runtime.SceneGroups.Scenes;
 using Nox.Worlds.Scenes;
 using UnityEngine;
@@ -30,7 +31,7 @@ namespace Nox.Worlds.Runtime.SceneGroups {
 			progress?.Invoke(0.0f);
 
 			var prefab = new GameObject($"[Reference] {nameof(T)}");
-			prefab.AddComponent<Anchor>().Add("world");
+			prefab.AddComponent<Anchor>().Add(WorldPath.WORLD_TAG);
 
 			SceneManager.MoveGameObjectToScene(prefab, scene);
 			foreach (var root in scene.GetRootGameObjects())
